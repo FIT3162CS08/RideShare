@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/component/Navigation";
+import Navigation from "@/component/navigation/Navigation";
 import COLOUR from "@/util/COLOUR";
 
 
@@ -32,9 +32,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased  min-h-screen`}
       >
-        <main className="w-screen min-h-screen ">
+        <main className="w-screen min-h-screen flex flex-col">
           <Navigation />
-          <div className={`mx-auto w-full h-full max-w-6xl bg-blue-700/45`}>
+          <div className={`mx-auto w-full h-full max-w-7xl bg-[#0059D4]/5 px-16 py-12`}>
             {children}
           </div>
         </main>

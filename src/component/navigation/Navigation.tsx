@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import React from 'react'
-import NavLink from './navigation/NavLink'
+import NavLink from './NavLink'
 
 const img_url = "https://cdn-icons-png.flaticon.com/512/1571/1571921.png"
 
