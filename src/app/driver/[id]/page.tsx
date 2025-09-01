@@ -15,9 +15,9 @@ export default function UserPage() {
     }
 
     return (
-        <main className="px-16 py-14 pb-34 my-12 rounded-2xl flex flex-col items-center justify-start font-serif from-slate-950/10 from-40% to-slate-50/30 bg-radial ">
+        <main className="px-16 py-14 pb-34 my-12 rounded-2xl flex flex-col items-center justify-start font-sans from-slate-950/10 from-40% to-slate-50/30 bg-radial ">
             <h1 className="mt-10 w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
-                ABOUT
+                YOUR DRIVER
             </h1>
             <h1 className="mt-22 w-fit text-3xl font-thin text-shadow-2xs text-shadow-slate-500">
                 Profile
@@ -36,12 +36,48 @@ export default function UserPage() {
                             Verified Monash Student
                         </h1>
                     </div>
-                    <h3 className="text-xl font-thin my-5 text-shadow-2xs text-shadow-amber-50">
-                        {data.trips_count} trips in total
-                    </h3>
-                    <p className="text-lg  font-thin">{data.description}</p>
+                    <div className="text-md font-thin my-4 flex gap-4 justify-center items-center">
+                        <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
+                            {data.carpools | 44} <br /> carpools
+                        </h3>
+                        <span className="ml-1">|</span>
+                        <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
+                            {data.carpools | 23} 👍 <br /> thumbs up
+                        </h3>
+                        <span className="ml-1">|</span>
+                        <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
+                            {data.years | 3} <br /> years
+                        </h3>
+                    </div>
+                    <h1 className="text-left text-lg font-[300] w-full pl-5 mb-3">
+                        <span className="font-bold">🌐 Languages spoken</span>{" "}
+                        {["English", "Hindi"].map((lang, i) => (
+                            <span className="font-medium">
+                                {lang}
+                                {i != 1 ? ", " : "."}
+                            </span>
+                        ))}
+                    </h1>
+                    <h1 className="text-left text-lg font-[300] w-full pl-6 mb-3">
+                        <span className="font-bold">📍 Key location </span>
+                        Epping, North Melbourne
+                    </h1>
+                    <h1 className="text-left text-lg font-[300] w-full pl-6">
+                        <span className="font-bold">💡 Fun Fact:</span>{" "}
+                        {data.fun_fact || "I have a blackbelt in Karate"}
+                    </h1>
+                    <hr className="border-t-1.5  border-slate-950 rounded-full w-full h-0 my-5" />
+                    <div className="text-left text-lg font-[300] w-full pl-6">
+                        <span className="font-bold">🥴 Most Weird Trip: </span>
+                        <span className="">
+                            {data.fun_fact ||
+                                "3 people threw up in my car once. 3 people threw up in my car once. 3 people threw up in my car once. "}
+                        </span>
+                    </div>
+                    <hr className="border-t-1.5  border-slate-950/70 rounded-full w-full h-0 my-5" />
                 </div>
             </div>
+            <p className="text-lg  font-thin px-40 my-10">{data.description}</p>
             <div className="px-16 ">
                 <h2 className="mt-10 text-3xl text-shadow-2xs text-shadow-slate-500 ">
                     Achievements
@@ -64,7 +100,7 @@ export default function UserPage() {
                         }
                     />
                     <AchievementCard
-                        title={"Trustworthy"}
+                        title={"Polite"}
                         description={"This user has a high rating"}
                         img_url={
                             "https://png.pngtree.com/png-vector/20241225/ourmid/pngtree-woman-motorcyclist-in-leather-jacket-and-helmet-clipart-illustration-png-image_14864569.png"

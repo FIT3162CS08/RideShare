@@ -2,7 +2,6 @@
 import Loading from "@/component/Loading";
 import AchievementCard from "@/component/profile/AchievementCard";
 import { useFetch } from "@/useHook/useFetch";
-import BlueBlobBackground from "@/util/BlueBlobBackground";
 import { useParams } from "next/navigation";
 
 export default function UserPage() {
