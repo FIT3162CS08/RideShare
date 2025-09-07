@@ -4,21 +4,99 @@ import AchievementCard from "@/component/profile/AchievementCard";
 import { useFetch } from "@/useHook/useFetch";
 import BlueBlobBackground from "@/util/BlueBlobBackground";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 
 export default function UserPage() {
-    const params = useParams();
+    const {id} = useParams();
+    const is_me = true;
+    const [editing, setEditing] = useState(false)
+    const [backupData, setBackupData] = useState()
 
-    const { data, loading, error } = useFetch("s");
+    const { data, setData, loading, error } = useFetch(`http://localhost:5000/driver/${id}`);
+
+    function startEdit() {
+        setEditing(_ => true)
+        setBackupData(_ => data)
+    }
+
+    async function saveEdit() {
+        try {
+            const response = await fetch(`http://localhost:5000/driver/${id}`, {
+                method: "POST", // or PATCH, depending on your route setup
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update user");
+            }
+
+            const ret = await response.json();
+            console.log("Updated user:", ret);
+        } catch (error) {
+            console.error(error);
+        }
+        // Stop editing
+        setEditing(false)
+    }
+
+    function discardEdit() {
+        setEditing(_ => false)
+        setData(_ => backupData)
+    }
+
+    function editLabel(e, label, second_label) {
+        if (second_label) {
+            setData(d => ({
+                ...d,
+                [second_label] : {
+                    ...data[second_label],
+                    [label]: e.target.value
+                }
+            }))
+        }
+
+        setData(d => ({
+            ...d,
+            [label]: e.target.value
+        }))
+    }
+
 
     if (loading) {
         return <Loading />;
     }
 
+    if (error) {
+        return <h1>{error}</h1>
+    }
+
     return (
         <main className="px-16 py-14 pb-34 my-12 rounded-2xl flex flex-col items-center justify-start font-sans from-slate-950/10 from-40% to-slate-50/30 bg-radial ">
-            <h1 className="mt-10 w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
-                YOUR DRIVER
-            </h1>
+            <div className="mt-10 flex items-center justify-center gap-10">
+                <h1 className="w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
+                    {is_me ? "YOUR DRIVER PROFILE" : "YOUR DRIVER"}
+                </h1>
+                {
+                    !is_me ? <></> :
+                        (!editing) ? (
+                            <button onClick={startEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                Edit Profile
+                            </button>
+                        ) : (
+                            <div className="flex gap-4">
+                                <button onClick={saveEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                    Save Changes
+                                </button>
+                                <button onClick={discardEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                    Discard Changes
+                                </button>
+                            </div>
+                        )
+                }
+            </div>
             <h1 className="mt-22 w-fit text-3xl font-thin text-shadow-2xs text-shadow-slate-500">
                 Profile
             </h1>
@@ -31,53 +109,95 @@ export default function UserPage() {
                 </div>
                 <div className="w-5/12 flex flex-col  items-center">
                     <div className="flex items-center justify-center gap-4">
-                        <h1 className="text-2xl font-thin">{data.name}</h1> |
+                        {
+                          editing 
+                            ? <input className="text-xl font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.username} onChange={(e) => editLabel(e, "username")} /> 
+                            : <h1 className="text-2xl font-thin">{data.username}</h1>
+                        } 
+                        |
                         <h1 className="text-md font-thin">
                             Verified Monash Student
                         </h1>
                     </div>
                     <div className="text-md font-thin my-4 flex gap-4 justify-center items-center">
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.carpools | 44} <br /> carpools
+                            {data.carpools | 0} <br /> carpools
                         </h3>
                         <span className="ml-1">|</span>
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.carpools | 23} 👍 <br /> thumbs up
+                            {data.thumbsup | 0} 👍 <br /> thumbs up
                         </h3>
                         <span className="ml-1">|</span>
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.years | 3} <br /> years
+                            {data.year | 0} <br /> start year
                         </h3>
                     </div>
-                    <h1 className="text-left text-lg font-[300] w-full pl-5 mb-3">
+                    <div className="text-left text-lg font-[300] w-full pl-5 mb-3">
                         <span className="font-bold">🌐 Languages spoken</span>{" "}
-                        {["English", "Hindi"].map((lang, i) => (
-                            <span className="font-medium">
+                        {data.languages.map((lang, i) => (
+                            <span key={i} className="font-medium">
                                 {lang}
                                 {i != 1 ? ", " : "."}
                             </span>
                         ))}
-                    </h1>
-                    <h1 className="text-left text-lg font-[300] w-full pl-6 mb-3">
-                        <span className="font-bold">📍 Key location </span>
-                        Epping, North Melbourne
-                    </h1>
-                    <h1 className="text-left text-lg font-[300] w-full pl-6">
+                    </div>
+                    <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6 mb-3">
+                        <span className="font-bold">📍 Key location: </span>
+                        {
+                          editing 
+                            ?   (<div>
+                                    <div className="flex gap-2">
+                                        <h1>Suburb:</h1>
+                                        <input 
+                                            className="font-thin bg-slate-100/40 px-1.5 py-0.5 mb-2 rounded-lg text-md outline-1" 
+                                            value={data.key_location.suburb} 
+                                            onChange={(e) => editLabel(e, "suburb", "key_location")} 
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <h1>City: </h1>
+                                        <input 
+                                            className="font-thin bg-slate-100/40 px-1.5 py-0.5 rounded-lg text-md outline-1" 
+                                            value={data.key_location.city} 
+                                            onChange={(e) => editLabel(e, "city", "key_location")} 
+                                        />
+                                    </div>
+                                </div>)
+                            : <h1>{`${data.key_location.suburb}, ${data.key_location.city}`}</h1>
+                        } 
+                        
+                    </div>
+                    <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6">
                         <span className="font-bold">💡 Fun Fact:</span>{" "}
-                        {data.fun_fact || "I have a blackbelt in Karate"}
-                    </h1>
+                        {
+                          editing 
+                            ? <input className="text-lg font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.fun_fact} onChange={(e) => editLabel(e, "fun_fact")} /> 
+                            : <h1 className="">{data.fun_fact || "N/A"}</h1>
+                        } 
+                        
+                    </div>
                     <hr className="border-t-1.5  border-slate-950 rounded-full w-full h-0 my-5" />
-                    <div className="text-left text-lg font-[300] w-full pl-6">
-                        <span className="font-bold">🥴 Most Weird Trip: </span>
-                        <span className="">
-                            {data.fun_fact ||
-                                "3 people threw up in my car once. 3 people threw up in my car once. 3 people threw up in my car once. "}
-                        </span>
+                    <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6">
+                        {
+                          editing 
+                            ? (<div className="flex flex-col w-full gap-1">
+                                <span>🥴 Most Weird Trip: </span>
+                                <input className="text-lg w-full font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.weird_trip} onChange={(e) => editLabel(e, "weird_trip")} />
+                            </div>) 
+                            : <h1><span className="font-bold">🥴 Most Weird Trip:</span> {data.weird_trip || "N/A"}</h1>
+                        }
                     </div>
                     <hr className="border-t-1.5  border-slate-950/70 rounded-full w-full h-0 my-5" />
                 </div>
             </div>
-            <p className="text-lg  font-thin px-40 my-10">{data.description}</p>
+            <div className="text-lg font-thin px-40 my-10 w-full">
+                {
+                    editing 
+                    ? <textarea className="font-thin min-h-[200px] bg-slate-100/40 px-4 py-2 w-full rounded-lg outline-1" value={data.description} onChange={(e) => editLabel(e, "description")} /> 
+                    : <p className="">{data.description || "N/A"}</p>
+                }
+            </div>
+            
             <div className="px-16 ">
                 <h2 className="mt-10 text-3xl text-shadow-2xs text-shadow-slate-500 ">
                     Achievements

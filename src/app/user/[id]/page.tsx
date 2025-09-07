@@ -3,21 +3,102 @@ import Loading from "@/component/Loading";
 import AchievementCard from "@/component/profile/AchievementCard";
 import { useFetch } from "@/useHook/useFetch";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 
 export default function UserPage() {
-    const params = useParams();
+    const {id} = useParams();
+    const is_me = true;
+    const [editing, setEditing] = useState(false)
+    const [backupData, setBackupData] = useState()
 
-    const { data, loading, error } = useFetch("s");
+
+    const { data, setData, loading, error } = useFetch(`http://localhost:5000/user/${id}`);
+
+
+    function startEdit() {
+        setEditing(_ => true)
+        setBackupData(_ => data)
+    }
+
+    async function saveEdit() {
+        try {
+            const response = await fetch(`http://localhost:5000/user/${id}`, {
+                method: "POST", // or PATCH, depending on your route setup
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update user");
+            }
+
+            const ret = await response.json();
+            console.log("Updated user:", ret);
+        } catch (error) {
+            console.error(error);
+        }
+        // Stop editing
+        setEditing(false)
+    }
+
+    function discardEdit() {
+        setEditing(_ => false)
+        setData(_ => backupData)
+    }
+
+    function editLabel(e, label, second_label) {
+        if (second_label) {
+            setData(d => ({
+                ...d,
+                [second_label] : {
+                    ...data[second_label],
+                    [label]: e.target.value
+                }
+            }))
+        }
+
+        setData(d => ({
+            ...d,
+            [label]: e.target.value
+        }))
+    }
+
 
     if (loading) {
         return <Loading />;
     }
 
+    if (error) {
+        return <h1>{error}</h1>
+    }
+
+
     return (
         <main className="px-16 py-14 pb-34 my-12 rounded-2xl flex flex-col items-center justify-start font-serif from-slate-950/10 from-40% to-slate-50/30 bg-radial ">
-            <h1 className="mt-10 w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
-                ABOUT
-            </h1>
+            <div className="mt-10 flex items-center justify-center gap-10">
+                <h1 className="w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
+                    {is_me ? "YOUR PROFILE" : "ABOUT"}
+                </h1>
+                {
+                    !is_me ? <></> :
+                        (!editing) ? (
+                            <button onClick={startEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                Edit Profile
+                            </button>
+                        ) : (
+                            <div className="flex gap-4">
+                                <button onClick={saveEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                    Save Changes
+                                </button>
+                                <button onClick={discardEdit} className="px-6 py-3 bg-blue-950/15 rounded-xl cursor-pointer">
+                                    Discard Changes
+                                </button>
+                            </div>
+                        )
+                }
+            </div>
             <h1 className="mt-22 w-fit text-3xl font-thin text-shadow-2xs text-shadow-slate-500">
                 Profile
             </h1>
@@ -30,7 +111,12 @@ export default function UserPage() {
                 </div>
                 <div className="w-5/12 flex flex-col  items-center">
                     <div className="flex items-center justify-center gap-4">
-                        <h1 className="text-2xl font-thin">{data.name}</h1> |
+                        {
+                          editing 
+                            ? <input className="text-xl font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.username} onChange={(e) => editLabel(e, "username")} /> 
+                            : <h1 className="text-2xl font-thin">{data.username}</h1>
+                        }
+                        |
                         <h1 className="text-md font-thin">
                             Verified Monash Student
                         </h1>
@@ -38,10 +124,16 @@ export default function UserPage() {
                     <h3 className="text-xl font-thin my-5 text-shadow-2xs text-shadow-amber-50">
                         {data.trips_count} trips in total
                     </h3>
-                    <p className="text-lg  font-thin">{data.description}</p>
+                    <div className="text-lg font-thin w-full">
+                        {
+                            editing 
+                            ? <textarea className="font-thin min-h-[400px] bg-slate-100/40 px-4 py-2 w-full rounded-lg outline-1" value={data.description} onChange={(e) => editLabel(e, "description")} /> 
+                            : <p className="">{data.description || "N/A"}</p>
+                        }
+                    </div>
                 </div>
             </div>
-            <div className="px-16 ">
+            <div className="px-16 mt-20">
                 <h2 className="mt-10 text-3xl text-shadow-2xs text-shadow-slate-500 ">
                     Achievements
                 </h2>

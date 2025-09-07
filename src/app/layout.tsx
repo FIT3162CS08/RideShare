@@ -28,7 +28,7 @@ export default function RootLayout({
     return (
         <html>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased  min-h-screen`}
+                className={`antialiased  min-h-screen`}
             >
                 <BlueBlobBackground>
                     <main className="w-screen min-h-screen flex flex-col">
