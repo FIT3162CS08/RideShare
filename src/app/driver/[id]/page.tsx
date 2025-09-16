@@ -165,7 +165,6 @@ export default function UserPage() {
                                 </div>)
                             : <h1>{`${data.key_location.suburb}, ${data.key_location.city}`}</h1>
                         } 
-                        
                     </div>
                     <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6">
                         <span className="font-bold">💡 Fun Fact:</span>{" "}
