@@ -17,7 +17,7 @@ const Navigation = () => {
                 </div>
             </div>
             <div className='flex items-center gap-14'>
-                <NavLink href="/user">Login</NavLink>
+                <NavLink href="/login">Login</NavLink>
                 <NavLink href="/about">Sign Up</NavLink>
             </div>
         </nav>
