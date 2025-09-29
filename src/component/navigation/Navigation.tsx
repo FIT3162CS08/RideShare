@@ -19,7 +19,7 @@ const Navigation = () => {
             </div>
             <div className='flex items-center gap-14'>
                 <NavLink href="/login">Login</NavLink>
-                <NavLink href="/about">Sign Up</NavLink>
+                <NavLink href="/signup">Sign Up</NavLink>
             </div>
         </nav>
   )
