@@ -2,6 +2,7 @@
 import Loading from "@/component/Loading";
 import AchievementCard from "@/component/profile/AchievementCard";
 import { useFetch } from "@/useHook/useFetch";
+import BlueBlobBackground from "@/util/BlueBlobBackground";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
@@ -11,9 +12,7 @@ export default function UserPage() {
     const [editing, setEditing] = useState(false)
     const [backupData, setBackupData] = useState()
 
-
-    const { data, setData, loading, error } = useFetch(`http://localhost:5000/user/${id}`);
-
+    const { data, setData, loading, error } = useFetch(`http://localhost:5000/driver/${id}`);
 
     function startEdit() {
         setEditing(_ => true)
@@ -22,7 +21,7 @@ export default function UserPage() {
 
     async function saveEdit() {
         try {
-            const response = await fetch(`http://localhost:5000/user/${id}`, {
+            const response = await fetch(`http://localhost:5000/driver/${id}`, {
                 method: "POST", // or PATCH, depending on your route setup
                 headers: {
                     "Content-Type": "application/json",
@@ -76,9 +75,9 @@ export default function UserPage() {
 
     return (
         <main className="px-16 py-14 pb-34 my-12 rounded-2xl flex flex-col items-center justify-start font-sans from-slate-950/10 from-40% to-slate-50/30 bg-radial ">
-            <div className="mt-10 flex flex-col items-center justify-center gap-5">
+            <div className="mt-10 flex items-center justify-center gap-10">
                 <h1 className="w-fit text-5xl font-light text-shadow-2xs text-shadow-slate-500">
-                    {is_me ? "YOUR PROFILE" : "ABOUT"}
+                    {is_me ? "YOUR DRIVER PROFILE" : "YOUR DRIVER"}
                 </h1>
                 {
                     !is_me ? <></> :
@@ -101,7 +100,7 @@ export default function UserPage() {
             <h1 className="mt-22 w-fit text-3xl font-thin text-shadow-2xs text-shadow-slate-500">
                 Profile
             </h1>
-            <div className="mt-10 flex gap-14 justify-center">
+            <div className="mt-10 flex gap-25 justify-center">
                 <div className="w-1/3 h-fit rounded-4xl overflow-clip">
                     <img
                         className="bg-blue-400 w-full rounded-4xl aspect-1/1"
@@ -114,7 +113,7 @@ export default function UserPage() {
                           editing 
                             ? <input className="text-xl font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.username} onChange={(e) => editLabel(e, "username")} /> 
                             : <h1 className="text-2xl font-thin">{data.username}</h1>
-                        }
+                        } 
                         |
                         <h1 className="text-md font-thin">
                             Verified Monash Student
@@ -122,20 +121,20 @@ export default function UserPage() {
                     </div>
                     <div className="text-md font-thin my-4 flex gap-4 justify-center items-center">
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.trips_count | 0} <br /> trips taken
+                            {data.carpools | 0} <br /> carpools
                         </h3>
                         <span className="ml-1">|</span>
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.thumbsup | 5} 👍 <br /> thumbs up
+                            {data.thumbsup | 0} 👍 <br /> thumbs up
                         </h3>
                         <span className="ml-1">|</span>
                         <h3 className="text-shadow-2xs text-shadow-amber-50 text-center">
-                            {data.year | 2025} <br /> start year
+                            {data.year | 0} <br /> start year
                         </h3>
                     </div>
-                    <div className="text-left text-lg font-[300] w-full pl-6 mb-3">
+                    <div className="text-left text-lg font-[300] w-full pl-5 mb-3">
                         <span className="font-bold">🌐 Languages spoken</span>{" "}
-                        {(data.languages|| ["English", "Hindi"]).map((lang, i) => (
+                        {data.languages.map((lang, i) => (
                             <span key={i} className="font-medium">
                                 {lang}
                                 {i != 1 ? ", " : "."}
@@ -151,7 +150,7 @@ export default function UserPage() {
                                         <h1>Suburb:</h1>
                                         <input 
                                             className="font-thin bg-slate-100/40 px-1.5 py-0.5 mb-2 rounded-lg text-md outline-1" 
-                                            value={data.key_location.suburb}
+                                            value={data.key_location.suburb} 
                                             onChange={(e) => editLabel(e, "suburb", "key_location")} 
                                         />
                                     </div>
@@ -164,38 +163,32 @@ export default function UserPage() {
                                         />
                                     </div>
                                 </div>)
-                            : <h1>{`${"Epping"}, ${"North Melbourne"}`}</h1>
+                            : <h1>{`${data.key_location.suburb}, ${data.key_location.city}`}</h1>
                         } 
                     </div>
-
+                    <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6">
+                        <span className="font-bold">💡 Fun Fact:</span>{" "}
+                        {
+                          editing 
+                            ? <input className="text-lg font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.fun_fact} onChange={(e) => editLabel(e, "fun_fact")} /> 
+                            : <h1 className="">{data.fun_fact || "N/A"}</h1>
+                        } 
+                        
+                    </div>
                     <hr className="border-t-1.5  border-slate-950 rounded-full w-full h-0 my-5" />
-
                     <div className="flex gap-2 text-left text-lg font-[300] w-full pl-6">
                         {
                           editing 
                             ? (<div className="flex flex-col w-full gap-1">
-                                <span>🤩 Favourite Trip: </span>
+                                <span>🥴 Most Weird Trip: </span>
                                 <input className="text-lg w-full font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.weird_trip} onChange={(e) => editLabel(e, "weird_trip")} />
                             </div>) 
-                            : <h1><span className="font-bold">🤩 Favourite Trip:</span> {data.weird_trip || "I drove around South Australia with my friends"}</h1>
+                            : <h1><span className="font-bold">🥴 Most Weird Trip:</span> {data.weird_trip || "N/A"}</h1>
                         }
                     </div>
-                    
-                    <hr className="border-t-1.5  border-slate-950 rounded-full w-full h-0 my-5" />
-                    
-                    <div className="mt-3 flex gap-2 text-left text-lg font-[300] w-full pl-6">
-                        {
-                          editing 
-                            ? (<div className="flex flex-col w-full gap-1">
-                                <span>🤔 Why give me a ride: </span>
-                                <input className="text-lg w-full font-thin bg-slate-100/40 px-2 py-1 rounded-lg outline-1" value={data.weird_trip} onChange={(e) => editLabel(e, "weird_trip")} />
-                            </div>) 
-                            : <h1><span className="font-bold">🤔 Why give me a ride:</span> {data.weird_trip || "I am fun to hang out with and just need a bit of help right now."}</h1>
-                        }
-                    </div>
+                    <hr className="border-t-1.5  border-slate-950/70 rounded-full w-full h-0 my-5" />
                 </div>
             </div>
-            
             <div className="text-lg font-thin px-40 my-10 w-full">
                 {
                     editing 
@@ -203,8 +196,8 @@ export default function UserPage() {
                     : <p className="">{data.description || "N/A"}</p>
                 }
             </div>
-
-            <div className="px-16 mt-20">
+            
+            <div className="px-16 ">
                 <h2 className="mt-10 text-3xl text-shadow-2xs text-shadow-slate-500 ">
                     Achievements
                 </h2>
@@ -226,7 +219,7 @@ export default function UserPage() {
                         }
                     />
                     <AchievementCard
-                        title={"Trustworthy"}
+                        title={"Polite"}
                         description={"This user has a high rating"}
                         img_url={
                             "https://png.pngtree.com/png-vector/20241225/ourmid/pngtree-woman-motorcyclist-in-leather-jacket-and-helmet-clipart-illustration-png-image_14864569.png"
