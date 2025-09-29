@@ -1,4 +1,4 @@
-// controllers/userController.js
+const User = require("../models/User");
 
 const users = {
     "1": {
