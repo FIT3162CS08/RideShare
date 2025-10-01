@@ -30,7 +30,7 @@ const register = async (req, res) => {
 
     res.cookie("access_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
@@ -59,7 +59,7 @@ const login = async (req, res) => {
   // httpOnly cookie with secure defaults
   res.cookie("access_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true on HTTPS
+    secure: false, // true on HTTPS
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
     path: "/",
