@@ -24,45 +24,7 @@ export default function RideShareBooking() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
 
-  // Persist draft locally (so refreshes don’t lose inputs)
-  useEffect(() => {
-    const saved = localStorage.getItem("rs_booking_draft");
-    if (saved) {
-      try {
-        const d = JSON.parse(saved);
-        setPickup(d.pickup ?? "");
-        setDropoff(d.dropoff ?? "");
-        setWhenNow(d.whenNow ?? true);
-        setDate(d.date ?? defaultDate());
-        setTime(d.time ?? defaultTime());
-        setRideType(d.rideType ?? "standard");
-        setPassengers(d.passengers ?? 1);
-        setLuggage(d.luggage ?? 0);
-        setPhone(d.phone ?? "");
-        setNotes(d.notes ?? "");
-        setPromo(d.promo ?? "");
-        setPayment(d.payment ?? "card");
-      } catch {}
-    }
-  }, []);
-
-  useEffect(() => {
-    const draft = {
-      pickup,
-      dropoff,
-      whenNow,
-      date,
-      time,
-      rideType,
-      passengers,
-      luggage,
-      phone,
-      notes,
-      promo,
-      payment,
-    };
-    localStorage.setItem("rs_booking_draft", JSON.stringify(draft));
-  }, [pickup, dropoff, whenNow, date, time, rideType, passengers, luggage, phone, notes, promo, payment]);
+  // Removed localStorage draft persistence; we now rely on backend.
 
   // Fake distance estimate (since no maps yet)
   const distanceKm = useMemo(() => {
@@ -97,17 +59,46 @@ export default function RideShareBooking() {
     return true;
   }, [pickup, dropoff, phone, whenNow, date, time]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
     setSubmitting(true);
-    // No API: just mock a booking reference & show confirmation
-    setTimeout(() => {
-      const ref = "RS-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      setBookingRef(ref);
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pickup,
+          dropoff,
+          whenNow,
+          date,
+          time,
+          rideType,
+          passengers,
+          luggage,
+          phone,
+          notes,
+          promo,
+          payment,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create booking");
+      const data = await res.json();
+      const tripId = data.tripId;
+      if (tripId) {
+        window.location.href = `/trip/${tripId}`;
+        return;
+      }
+      // Fallback: show local confirmation if no trip id returned
+      const ref = String(data.bookingId || "").slice(-6).toUpperCase();
+      setBookingRef(ref || null);
       setShowConfirm(true);
+    } catch (err) {
+      console.error(err);
+      alert("Could not create booking. Please try again.");
+    } finally {
       setSubmitting(false);
-    }, 900);
+    }
   }
 
   function resetForm() {
@@ -123,7 +114,7 @@ export default function RideShareBooking() {
     setNotes("");
     setPromo("");
     setPayment("card");
-    localStorage.removeItem("rs_booking_draft");
+    // No local storage to clear anymore
   }
 
   return (
@@ -467,14 +458,15 @@ export default function RideShareBooking() {
         </aside>
       </main>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal (fallback when no trip id is returned) */}
       {showConfirm && (
         <div className="fixed inset-0 z-20 bg-black/40 grid place-items-center p-4">
           <div className="max-w-lg w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-xl">
-            <h3 className="text-xl font-semibold">Booking confirmed (demo)</h3>
-            <p className="text-sm text-slate-600 mt-1">No backend yet—this is a local confirmation to help test the UI.</p>
+            <h3 className="text-xl font-semibold">Booking confirmed</h3>
             <div className="mt-4 space-y-2 text-sm">
-              <div><span className="text-slate-500">Ref: </span><span className="font-mono font-medium">{bookingRef}</span></div>
+              {bookingRef && (
+                <div><span className="text-slate-500">Ref: </span><span className="font-mono font-medium">{bookingRef}</span></div>
+              )}
               <div><span className="text-slate-500">Pickup: </span>{pickup}</div>
               <div><span className="text-slate-500">Dropoff: </span>{dropoff}</div>
               <div><span className="text-slate-500">When: </span>{whenNow ? `Now (ETA ~${etaMin} min)` : `${date} ${time}`}</div>
@@ -482,15 +474,6 @@ export default function RideShareBooking() {
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded-2xl border border-slate-300">Close</button>
-              <button
-                onClick={() => {
-                  setShowConfirm(false);
-                  window.location.href = '/trip';
-                }}
-                className="px-4 py-2 rounded-2xl bg-slate-900 text-white"
-              >
-                View Trip
-              </button>
             </div>
           </div>
         </div>
