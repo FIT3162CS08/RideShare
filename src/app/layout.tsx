@@ -3,6 +3,7 @@ import "./globals.css";
 
 import Navigation from "@/component/navigation/Navigation";
 import COLOUR from "@/util/COLOUR";
+import Script from "next/script";
 import BlueBlobBackground from "@/util/BlueBlobBackground";
 
 const geistSans = Geist({
@@ -33,6 +34,10 @@ return (
     <body
       className={`${roboto} antialiased min-h-screen`}
     >
+      <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCuJux5RDfthQuNTC-Aagb2CzoF-H-HQa4&libraries=places`}
+          strategy="beforeInteractive"
+      />
       <BlueBlobBackground>
         <main className="w-screen min-h-screen flex flex-col">
           <Navigation />
