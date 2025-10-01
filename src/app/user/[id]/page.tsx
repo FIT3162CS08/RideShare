@@ -12,7 +12,7 @@ export default function UserPage() {
     const [backupData, setBackupData] = useState()
 
 
-    const { data, setData, loading, error } = useFetch(`http://localhost:3000/user/${id}`);
+    const { data, setData, loading, error } = useFetch(`http://localhost:5000/user/${id}`);
 
 
     function startEdit() {
@@ -22,12 +22,13 @@ export default function UserPage() {
 
     async function saveEdit() {
         try {
-            const response = await fetch(`http://localhost:3000/user/${id}`, {
+            const response = await fetch(`http://localhost:5000/user/${id}`, {
                 method: "POST", // or PATCH, depending on your route setup
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(data),
+                credentials: "include"
             });
 
             if (!response.ok) {
