@@ -15,6 +15,7 @@ const Navigation = () => {
                     <NavLink href="/booking">△ Book Ride</NavLink>
                     <NavLink href="/trip">△ My Trip</NavLink>
                     <NavLink href="/driver_portal">△ Drive</NavLink>
+                    <NavLink href="/settings">△ Settings</NavLink>
                 </div>
             </div>
             <div className='flex items-center gap-14'>

@@ -1,20 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
 
 // Trip Page - Rider's view of their active trip
 export default function TripPage() {
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
-  
+  const mapRef = useRef<HTMLDivElement>(null);
+  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+
   const trip = {
     id: "RS-ABC123",
     driver: "John D.",
     driverRating: 4.8,
     vehicle: "Blue Toyota Camry - ABC123",
-    pickup: "26 Sir John Monash Dr, Caulfield",
-    dropoff: "14 Innovation Walk, Clayton",
+    pickup: {
+      formatted_address: "26 Sir John Monash Dr, Caulfield East VIC 3145, Australia",
+      location: {
+        lat: -37.8774408,
+        lng: 145.0435147
+      },
+      place_id: "ChIJzdMzrIxp1moRlxwupvPUt94",
+    },
+    dropoff: {
+      formatted_address: "14 Innovation Walk, Clayton VIC 3168, Australia",
+      location: {
+          "lat": -37.9103577,
+          "lng": 145.13009
+      },
+      place_id: "Ei8xNCBJbm5vdmF0aW9uIFdhbGssIENsYXl0b24gVklDIDMxNjgsIEF1c3RyYWxpYSIwEi4KFAoSCY0bOiTJatZqETmYbG1kGa_GEA4qFAoSCVFqpiPJatZqEXhD6l2H9fCT",
+    },
     fare: 23.75,
     eta: 3
   };
@@ -26,6 +42,34 @@ export default function TripPage() {
   function completeTrip() {
     setTripStatus("completed");
   }
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = new google.maps.Map(mapRef.current, {
+      zoom: 14,
+      center: { lat: -37.877, lng: 145.045 }, // Rough midpoint between Caulfield and Clayton
+    });
+
+    const directionsService = new google.maps.DirectionsService();
+    directionsRendererRef.current = new google.maps.DirectionsRenderer();
+    directionsRendererRef.current.setMap(map);
+
+    directionsService.route(
+      {
+        origin: trip.pickup.location,
+        destination: trip.dropoff.location,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          directionsRendererRef.current?.setDirections(result);
+        } else {
+          console.error("Directions request failed:", status);
+        }
+      }
+    );
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -108,21 +152,26 @@ export default function TripPage() {
           </div>
 
           {/* Trip Details */}
-          <div className="space-y-4">
+          <div className="space-y-4 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <div>
                 <div className="font-medium">Pickup</div>
-                <div className="text-sm text-gray-500">{trip.pickup}</div>
+                <div className="text-sm text-gray-500">{trip.pickup.formatted_address}</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div>
                 <div className="font-medium">Dropoff</div>
-                <div className="text-sm text-gray-500">{trip.dropoff}</div>
+                <div className="text-sm text-gray-500">{trip.dropoff.formatted_address}</div>
               </div>
             </div>
+          </div>
+
+          {/* Map */}
+          <div className="w-full h-72 rounded-2xl overflow-hidden mb-6">
+            <div ref={mapRef} className="w-full h-full" />
           </div>
 
           {/* Trip Actions */}
