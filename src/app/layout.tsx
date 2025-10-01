@@ -35,7 +35,7 @@ return (
       className={`${roboto} antialiased min-h-screen`}
     >
       <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCuJux5RDfthQuNTC-Aagb2CzoF-H-HQa4&libraries=places`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.MAPS_API_KEY}&libraries=places`}
           strategy="beforeInteractive"
       />
       <BlueBlobBackground>
