@@ -97,43 +97,6 @@ export default function RideShareBooking() {
     return true;
   }, [pickup, dropoff, phone, whenNow, date, time]);
 
-<<<<<<< HEAD
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pickup,
-          dropoff,
-          whenNow,
-          date,
-          time,
-          rideType,
-          passengers,
-          luggage,
-          phone,
-          notes,
-          promo,
-          payment,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to create booking");
-      const data = await res.json();
-      const ref = String(data.bookingId || data.tripId || "").slice(-6).toUpperCase() ||
-        ("RS-" + Math.random().toString(36).slice(2, 8).toUpperCase());
-      setBookingRef(ref);
-      setShowConfirm(true);
-    } catch (err) {
-      console.error(err);
-      alert("Could not create booking. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-=======
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
@@ -145,7 +108,6 @@ export default function RideShareBooking() {
       setShowConfirm(true);
       setSubmitting(false);
     }, 900);
->>>>>>> 7f0f0e4ce4efc07ade5949f8707a3a394d2ab432
   }
 
   function resetForm() {
