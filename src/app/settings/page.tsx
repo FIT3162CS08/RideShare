@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import ProtectedRoute from "@/component/ProtectedRoute";
 
 export default function RideShareSettings() {
   const defaultProfile = {
@@ -90,227 +91,229 @@ export default function RideShareSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">
-              RS
+    <ProtectedRoute>
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        {/* Header */}
+        <header className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white border-b border-slate-200">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">
+                RS
+              </div>
+              <span className="font-semibold tracking-tight">RideShare</span>
             </div>
-            <span className="font-semibold tracking-tight">RideShare</span>
+            <div className="text-sm text-slate-600">Settings (localhost demo)</div>
           </div>
-          <div className="text-sm text-slate-600">Settings (localhost demo)</div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        <section className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
-          <h1 className="text-2xl font-semibold mb-4">Settings</h1>
+        {/* Main */}
+        <main className="max-w-6xl mx-auto px-4 py-6">
+          <section className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
+            <h1 className="text-2xl font-semibold mb-4">Settings</h1>
 
-          {/* Profile */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Profile</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  value={savedName}
-                  onChange={(e) => setSavedName(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
-                <input
-                  value={savedPhone}
-                  onChange={(e) => setSavedPhone(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Birthday</label>
-                <input
-                  type="date"
-                  value={birthday}
-                  onChange={(e) => setBirthday(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
-            </div>
-
-            {/* Profile Picture */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Profile Picture
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full border border-slate-300 overflow-hidden">
-                  {profilePic ? (
-                    <img
-                      src={profilePic}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full grid place-items-center bg-slate-100 text-slate-400">
-                      No Image
-                    </div>
-                  )}
+            {/* Profile */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Profile</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <input
+                    value={savedName}
+                    onChange={(e) => setSavedName(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50 text-sm"
-                >
-                  Choose Photo
-                </button>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <input
+                    value={savedPhone}
+                    onChange={(e) => setSavedPhone(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Birthday</label>
+                  <input
+                    type="date"
+                    value={birthday}
+                    onChange={(e) => setBirthday(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Profile Picture */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Profile Picture
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full border border-slate-300 overflow-hidden">
+                    {profilePic ? (
+                      <img
+                        src={profilePic}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full grid place-items-center bg-slate-100 text-slate-400">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50 text-sm"
+                  >
+                    Choose Photo
+                  </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePicChange}
+                    ref={fileInputRef}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Address</label>
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePicChange}
-                  ref={fileInputRef}
-                  className="hidden"
+                  ref={autocompleteRef}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Search your address"
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+              </div>
+
+              {/* Promo Code */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Promo Code
+                </label>
+                <input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
                 />
               </div>
             </div>
 
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Address</label>
-              <input
-                ref={autocompleteRef}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Search your address"
-                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-              />
+            {/* Preferences */}
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">Preferences</h2>
+              <div className="text-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Push notifications</span>
+                  <button
+                    onClick={() => setNotifications(!notifications)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifications ? "bg-slate-900" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        notifications ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Save receipts to email</span>
+                  <button
+                    onClick={() => setSaveReceipts(!saveReceipts)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      saveReceipts ? "bg-slate-900" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        saveReceipts ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Promo Code */}
+            {/* Payment */}
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Promo Code
-              </label>
-              <input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-              />
-            </div>
-          </div>
-
-          {/* Preferences */}
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold">Preferences</h2>
-            <div className="text-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Push notifications</span>
-                <button
-                  onClick={() => setNotifications(!notifications)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications ? "bg-slate-900" : "bg-slate-300"
+              <h2 className="text-xl font-semibold">Payment</h2>
+              <div className="flex gap-3 text-sm mt-2">
+                <label
+                  className={`px-3 py-2 rounded-2xl border cursor-pointer ${
+                    defaultPayment === "card"
+                      ? "border-slate-900 bg-slate-50"
+                      : "border-slate-300"
                   }`}
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications ? "translate-x-6" : "translate-x-1"
-                    }`}
+                  <input
+                    type="radio"
+                    name="pay"
+                    className="mr-2"
+                    checked={defaultPayment === "card"}
+                    onChange={() => setDefaultPayment("card")}
                   />
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Save receipts to email</span>
-                <button
-                  onClick={() => setSaveReceipts(!saveReceipts)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    saveReceipts ? "bg-slate-900" : "bg-slate-300"
+                  Card
+                </label>
+                <label
+                  className={`px-3 py-2 rounded-2xl border cursor-pointer ${
+                    defaultPayment === "cash"
+                      ? "border-slate-900 bg-slate-50"
+                      : "border-slate-300"
                   }`}
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      saveReceipts ? "translate-x-6" : "translate-x-1"
-                    }`}
+                  <input
+                    type="radio"
+                    name="pay"
+                    className="mr-2"
+                    checked={defaultPayment === "cash"}
+                    onChange={() => setDefaultPayment("cash")}
                   />
-                </button>
+                  Cash
+                </label>
               </div>
             </div>
-          </div>
 
-          {/* Payment */}
-          <div>
-            <h2 className="text-xl font-semibold">Payment</h2>
-            <div className="flex gap-3 text-sm mt-2">
-              <label
-                className={`px-3 py-2 rounded-2xl border cursor-pointer ${
-                  defaultPayment === "card"
-                    ? "border-slate-900 bg-slate-50"
-                    : "border-slate-300"
-                }`}
+            {/* Save & Reset */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleReset}
+                className="px-6 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50"
               >
-                <input
-                  type="radio"
-                  name="pay"
-                  className="mr-2"
-                  checked={defaultPayment === "card"}
-                  onChange={() => setDefaultPayment("card")}
-                />
-                Card
-              </label>
-              <label
-                className={`px-3 py-2 rounded-2xl border cursor-pointer ${
-                  defaultPayment === "cash"
-                    ? "border-slate-900 bg-slate-50"
-                    : "border-slate-300"
-                }`}
+                Reset
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-6 py-2 rounded-2xl bg-slate-900 text-white hover:bg-slate-800"
               >
-                <input
-                  type="radio"
-                  name="pay"
-                  className="mr-2"
-                  checked={defaultPayment === "cash"}
-                  onChange={() => setDefaultPayment("cash")}
-                />
-                Cash
-              </label>
+                Save
+              </button>
+              {saved && (
+                <span className="text-sm text-green-600 self-center">Saved!</span>
+              )}
             </div>
-          </div>
+          </section>
+        </main>
 
-          {/* Save & Reset */}
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50"
-            >
-              Reset
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-6 py-2 rounded-2xl bg-slate-900 text-white hover:bg-slate-800"
-            >
-              Save
-            </button>
-            {saved && (
-              <span className="text-sm text-green-600 self-center">Saved!</span>
-            )}
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
-        <div>© {new Date().getFullYear()} RideShare. Web-only localhost demo.</div>
-      </footer>
-    </div>
+        {/* Footer */}
+        <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
+          <div>© {new Date().getFullYear()} RideShare. Web-only localhost demo.</div>
+        </footer>
+      </div>
+    </ProtectedRoute>
   );
 }
 

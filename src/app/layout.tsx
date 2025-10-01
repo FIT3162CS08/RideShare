@@ -5,6 +5,7 @@ import Navigation from "@/component/navigation/Navigation";
 import COLOUR from "@/util/COLOUR";
 import Script from "next/script";
 import BlueBlobBackground from "@/util/BlueBlobBackground";
+import { UserProvider } from "@/context/UserContext";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -38,14 +39,16 @@ return (
           src={`https://maps.googleapis.com/maps/api/js?key=${process.env.MAPS_API_KEY}&libraries=places`}
           strategy="beforeInteractive"
       />
-      <BlueBlobBackground>
-        <main className="w-screen min-h-screen flex flex-col">
-          <Navigation />
-          <div className="mx-auto w-full h-full max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </BlueBlobBackground>
+      <UserProvider>
+        <BlueBlobBackground>
+          <main className="w-screen min-h-screen flex flex-col">
+            <Navigation />
+            <div className="mx-auto w-full h-full max-w-7xl">
+              {children}
+            </div>
+          </main>
+        </BlueBlobBackground>
+      </UserProvider>
     </body>
   </html>
 );

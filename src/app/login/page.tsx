@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useUser } from "@/context/UserContext";
 
 export default function Login() {
   const router = useRouter();
+  const { user, refreshUser } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -15,6 +17,12 @@ export default function Login() {
   // Set this in .env.local: NEXT_PUBLIC_API_BASE=http://localhost:5000 (your Express server)
   const API_BASE =
     process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +42,8 @@ export default function Login() {
         setError(data.error || "Login failed");
         return;
       }
+
+      await refreshUser();
 
       // success → go to the public home (which will show logged-in state)
       router.push("/");
