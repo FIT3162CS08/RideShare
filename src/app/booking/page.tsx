@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-// RideShare Booking Page — Web-only, localhost, no API integration
-// Tailwind classes are used for styling. Plug real APIs later.
+// RideShare Booking Page — Calls backend API to create booking
+// Tailwind classes are used for styling.
 
 export default function RideShareBooking() {
   // Core fields
@@ -97,17 +97,41 @@ export default function RideShareBooking() {
     return true;
   }, [pickup, dropoff, phone, whenNow, date, time]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
     setSubmitting(true);
-    // No API: just mock a booking reference & show confirmation
-    setTimeout(() => {
-      const ref = "RS-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pickup,
+          dropoff,
+          whenNow,
+          date,
+          time,
+          rideType,
+          passengers,
+          luggage,
+          phone,
+          notes,
+          promo,
+          payment,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create booking");
+      const data = await res.json();
+      const ref = String(data.bookingId || data.tripId || "").slice(-6).toUpperCase() ||
+        ("RS-" + Math.random().toString(36).slice(2, 8).toUpperCase());
       setBookingRef(ref);
       setShowConfirm(true);
+    } catch (err) {
+      console.error(err);
+      alert("Could not create booking. Please try again.");
+    } finally {
       setSubmitting(false);
-    }, 900);
+    }
   }
 
   function resetForm() {
