@@ -97,7 +97,6 @@ export default function RideShareBooking() {
     return true;
   }, [pickup, dropoff, phone, whenNow, date, time]);
 
-<<<<<<< HEAD
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
@@ -133,19 +132,6 @@ export default function RideShareBooking() {
     } finally {
       setSubmitting(false);
     }
-=======
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
-    setSubmitting(true);
-    // No API: just mock a booking reference & show confirmation
-    setTimeout(() => {
-      const ref = "RS-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      setBookingRef(ref);
-      setShowConfirm(true);
-      setSubmitting(false);
-    }, 900);
->>>>>>> 7f0f0e4ce4efc07ade5949f8707a3a394d2ab432
   }
 
   function resetForm() {
