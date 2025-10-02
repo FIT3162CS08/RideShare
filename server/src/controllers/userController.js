@@ -1,4 +1,4 @@
-// controllers/userController.js
+const User = require("../models/User");
 
 const users = {
     "1": {
@@ -47,7 +47,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   const {id} = req.params
   const user = users[id]
-  console.log(req.body)
+  console.log("dasdas")
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
 };

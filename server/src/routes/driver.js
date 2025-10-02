@@ -1,6 +1,6 @@
 const express = require("express");
 const driverController = require("../controllers/driverController");
-const auth = require("../middleware/auth");
+const auth = require("../middleware/requireAuth");
 
 const driver_route = express.Router();
 

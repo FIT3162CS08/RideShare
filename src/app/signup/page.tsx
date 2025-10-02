@@ -2,50 +2,49 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useUser } from "@/context/UserContext";
+import { useState } from "react";
 
-export default function Login() {
+export default function Signup() {
   const router = useRouter();
-  const { user, refreshUser } = useUser();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Set this in .env.local: NEXT_PUBLIC_API_BASE=http://localhost:5000 (your Express server)
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-
-  useEffect(() => {
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
+  // Set in .env.local, e.g. NEXT_PUBLIC_API_BASE=http://localhost:5000
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
-        credentials: "include", // IMPORTANT: send/receive httpOnly cookie
+        credentials: "include", // receive httpOnly cookie
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, remember }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Login failed");
+        setError(data.error || "Sign up failed");
         return;
       }
 
-      await refreshUser();
-
-      // success → go to the public home (which will show logged-in state)
+      // Success → backend set cookie → go to home
       router.push("/");
     } catch {
       setError("Network error. Please try again.");
@@ -57,10 +56,18 @@ export default function Login() {
   return (
     <section className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="text-2xl font-bold mb-2">Log in</h1>
-        <p className="text-sm text-gray-600 mb-6">Please enter your details</p>
+        <h1 className="text-2xl font-bold mb-2">Create your account</h1>
+        <p className="text-sm text-gray-600 mb-6">It only takes a minute</p>
 
         <form className="space-y-4" onSubmit={onSubmit}>
+          <input
+            type="text"
+            placeholder="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+          />
           <input
             type="email"
             placeholder="email"
@@ -77,22 +84,14 @@ export default function Login() {
             required
             className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black/20"
-              />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <Link href="/forgot" className="text-sm text-blue-600 hover:underline">
-              Forgot password?
-            </Link>
-          </div>
+          <input
+            type="password"
+            placeholder="confirm password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+          />
 
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
@@ -105,13 +104,13 @@ export default function Login() {
             disabled={loading}
             className="w-full rounded-lg bg-black px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? "Logging in…" : "Log in"}
+            {loading ? "Creating account…" : "Sign up"}
           </button>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Don’t have an account?{" "}
-            <Link href="/signup" className="font-medium text-blue-600 hover:underline">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-blue-600 hover:underline">
+              Log in
             </Link>
           </p>
         </form>

@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "global.d.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "global.d.ts", "server/src/models/User.js", "server/src/models/Ride.js", "server/src/models/Payment.js", "server/src/lib/mongodb.js"],
   "exclude": ["node_modules"]
 }
