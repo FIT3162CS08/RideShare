@@ -15,8 +15,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // Set this in .env.local: NEXT_PUBLIC_API_BASE=http://localhost:5000 (your Express server)
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = '/api'
+    // process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   useEffect(() => {
     if (user) {

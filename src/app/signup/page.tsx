@@ -14,7 +14,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   // Set in .env.local, e.g. NEXT_PUBLIC_API_BASE=http://localhost:5000
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = '/api';//process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
