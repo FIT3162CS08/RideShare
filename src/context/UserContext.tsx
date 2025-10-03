@@ -22,7 +22,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = '/api'
+    // process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   const refreshUser = async () => {
     try {
