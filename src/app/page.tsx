@@ -1,40 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-type MeUser = { id: string; email: string; name?: string };
+import { useUser } from "@/context/UserContext";
+import Loading from "@/component/Loading";
 
 export default function HomePage() {
-  const [user, setUser] = useState<MeUser | null>(null);
-  const [checked, setChecked] = useState(false);
+  const { user, loading, logout } = useUser();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
+  if (loading) return Loading();
 
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: "include", // send cookie
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user || data);
-        }
-      } catch {
-        // ignore – stay logged out UI
-      } finally {
-        setChecked(true);
-      }
-    };
-    check();
-  }, [API_BASE]);
-
-  // While checking, show the logged-out version (or a tiny skeleton if you prefer)
-  const isLoggedIn = !!user;
-
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <section className="px-8 md:px-20 lg:px-40 py-12">
         <div className="space-y-4">
@@ -73,21 +49,12 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold">
             Welcome{user?.name ? `, ${user.name}` : ""} 👋
           </h1>
-          <form
-            action={`${API_BASE}/auth/logout`}
-            method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              fetch(`${API_BASE}/auth/logout`, {
-                method: "POST",
-                credentials: "include",
-              }).then(() => location.reload());
-            }}
+          <button
+            className="px-4 py-2 rounded-lg border hover:bg-gray-50"
+            onClick={logout}
           >
-            <button className="px-4 py-2 rounded-lg border hover:bg-gray-50">
-              Log out
-            </button>
-          </form>
+            Log out
+          </button>
         </div>
 
         {/* Quick request form */}
