@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import AutocompleteInput from "@/component/AutocompleteInput";
 
 export default function RideShareSettings() {
   const defaultProfile = {
@@ -26,6 +27,7 @@ export default function RideShareSettings() {
     defaultProfile.profilePic
   );
   const [address, setAddress] = useState(defaultProfile.address);
+  const [googleLoc, setGLoc] = useState(defaultProfile.address);
 
   const [notifications, setNotifications] = useState(
     defaultProfile.notifications
@@ -39,27 +41,7 @@ export default function RideShareSettings() {
 
   const [saved, setSaved] = useState(false);
 
-  const autocompleteRef = useRef<HTMLInputElement>(null);
-  const autocompleteObj = useRef<google.maps.places.Autocomplete | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (autocompleteRef.current && !autocompleteObj.current) {
-      autocompleteObj.current = new google.maps.places.Autocomplete(
-        autocompleteRef.current,
-        {
-          types: ["address"],
-          componentRestrictions: { country: "au" },
-        }
-      );
-      autocompleteObj.current.addListener("place_changed", () => {
-        const place = autocompleteObj.current?.getPlace();
-        if (place?.formatted_address) {
-          setAddress(place.formatted_address);
-        }
-      });
-    }
-  }, []);
 
   function handleProfilePicChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
@@ -86,6 +68,8 @@ export default function RideShareSettings() {
   }
 
   function handleSave() {
+    console.log(address);
+    console.log(googleLoc);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -189,10 +173,10 @@ export default function RideShareSettings() {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium mb-1">Address</label>
-                <input
-                  ref={autocompleteRef}
+                <AutocompleteInput
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={setAddress}
+                  setLocation={setGLoc}
                   placeholder="Search your address"
                   className="w-full rounded-2xl border border-slate-300 px-3 py-2"
                 />
