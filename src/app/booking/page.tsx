@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
-
-// RideShare Booking Page — Calls backend API to create booking
-// Tailwind classes are used for styling.
+import AutocompleteInput from "@/component/AutocompleteInput";
+import TextInput from "@/component/TextInput";
+import { validatePhoneNumber, validateRequired } from "@/util/ValidationHelpers";
 
 export default function RideShareBooking() {
-  // Core fields
   const [pickup, setPickup] = useState("");
+  const [pickupLoc, setPickupLoc] = useState("");
   const [dropoff, setDropoff] = useState("");
+  const [dropoffLoc, setDropoffLoc] = useState("");
   const [whenNow, setWhenNow] = useState(true);
   const [date, setDate] = useState<string>(defaultDate());
   const [time, setTime] = useState<string>(defaultTime());
@@ -25,12 +26,22 @@ export default function RideShareBooking() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
 
-  // Removed localStorage draft persistence; we now rely on backend.
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+  const [showErrors, setShowErrors] = useState(false);
 
-  // Fake distance estimate (since no maps yet)
+  const validateAll = () => {
+    const newErrors = {
+      phone: validatePhoneNumber(phone),
+      pickup: validateRequired("Pickup location")(pickup),
+      dropoff: validateRequired("Dropoff location")(dropoff),
+    };
+    setErrors(newErrors);
+    console.log(newErrors)
+    return Object.values(newErrors).every((e) => !e);
+  };
+
   const distanceKm = useMemo(() => {
     if (!pickup || !dropoff) return 0;
-    // Simple string-difference heuristic to keep things deterministic on localhost
     const s = Math.abs(pickup.length - dropoff.length) + Math.min(pickup.length, dropoff.length) * 0.1;
     return Math.max(2, Math.min(18, Math.round(s)));
   }, [pickup, dropoff]);
@@ -38,31 +49,33 @@ export default function RideShareBooking() {
   const etaMin = useMemo(() => (whenNow ? Math.max(3, Math.min(12, 2 + (distanceKm % 9))) : 0), [whenNow, distanceKm]);
 
   const fare = useMemo(() => {
-    const base = rideType === "premium" ? 7.5 : rideType === "xl" ? 5.5 : 4.0; // AUD base/km
-    const start = rideType === "premium" ? 7 : rideType === "xl" ? 4 : 3; // AUD start fee
+    const base = rideType === "premium" ? 7.5 : rideType === "xl" ? 5.5 : 4.0;
+    const start = rideType === "premium" ? 7 : rideType === "xl" ? 4 : 3;
     const pplFactor = 1 + (passengers - 1) * 0.07;
     const luggageFactor = 1 + luggage * 0.03;
-    const scheduleFactor = whenNow ? 1 : 1.08; // slight uplift for scheduled
+    const scheduleFactor = whenNow ? 1 : 1.08;
     const subtotal = (start + distanceKm * base) * pplFactor * luggageFactor * scheduleFactor;
-    const promoCut = promo.trim().toUpperCase() === "WELCOME10" ? 0.9 : 1; // demo code
-    const gst = 0.1; // AU GST
+    const promoCut = promo.trim().toUpperCase() === "WELCOME10" ? 0.9 : 1;
+    const gst = 0.1;
     return Math.max(0, subtotal * promoCut * (1 + gst));
   }, [rideType, passengers, luggage, whenNow, distanceKm, promo]);
 
-  const valid = useMemo(() => {
-    // Simple AU-style phone check without regex: accept numbers with optional + and spaces
-    const compact = phone.split(" ").join("");
-    const startsOk = compact.startsWith("+61") || compact.startsWith("0");
-    const digits = Array.from(compact).filter(ch => "0123456789".includes(ch)).join("");
-    const lengthOk = digits.length >= 9 && digits.length <= 11; // broad demo bounds
-    if (!pickup || !dropoff || !startsOk || !lengthOk) return false;
-    if (!whenNow && (!date || !time)) return false;
-    return true;
-  }, [pickup, dropoff, phone, whenNow, date, time]);
+
+
+  // const valid = useMemo(() => {
+  //   const compact = phone.split(" ").join("");
+  //   const startsOk = compact.startsWith("+61") || compact.startsWith("0");
+  //   const digits = Array.from(compact).filter(ch => "0123456789".includes(ch)).join("");
+  //   const lengthOk = digits.length >= 9 && digits.length <= 11;
+  //   if (!pickup || !dropoff || !startsOk || !lengthOk) return false;
+  //   if (!whenNow && (!date || !time)) return false;
+  //   return true;
+  // }, [pickup, dropoff, phone, whenNow, date, time]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid) return;
+    setShowErrors(true);
+    if (!validateAll()) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/bookings", {
@@ -90,7 +103,6 @@ export default function RideShareBooking() {
         window.location.href = `/trip/${tripId}`;
         return;
       }
-      // Fallback: show local confirmation if no trip id returned
       const ref = String(data.bookingId || "").slice(-6).toUpperCase();
       setBookingRef(ref || null);
       setShowConfirm(true);
@@ -104,7 +116,9 @@ export default function RideShareBooking() {
 
   function resetForm() {
     setPickup("");
+    setPickupLoc("");
     setDropoff("");
+    setDropoffLoc("");
     setWhenNow(true);
     setDate(defaultDate());
     setTime(defaultTime());
@@ -115,13 +129,11 @@ export default function RideShareBooking() {
     setNotes("");
     setPromo("");
     setPayment("card");
-    // No local storage to clear anymore
   }
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-slate-50 text-slate-900">
-        {/* Header */}
         <header className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -132,89 +144,40 @@ export default function RideShareBooking() {
           </div>
         </header>
 
-        {/* Main */}
         <main className="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-3 gap-6">
-          {/* Form */}
           <section className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 p-4 md:p-6">
             <h1 className="text-2xl font-semibold mb-4">Book a ride</h1>
             <form onSubmit={handleSubmit} className="space-y-5">
+
               {/* Locations */}
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Pickup Location</label>
-                  <input
-                    value={pickup}
-                    onChange={(e) => setPickup(e.target.value)}
-                    placeholder="e.g., 26 Sir John Monash Dr, Caulfield"
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-                  />
-                  <div className="mt-2 text-xs text-slate-500">
-                    Popular Monash locations:
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <button 
-                        type="button"
-                        onClick={() => setPickup("Monash University Clayton Campus")}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200"
-                      >
-                        Clayton
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setPickup("Monash University Caulfield Campus")}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200"
-                      >
-                        Caulfield
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setPickup("Monash University Peninsula Campus")}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200"
-                      >
-                        Peninsula
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Dropoff Location</label>
-                  <input
-                    value={dropoff}
-                    onChange={(e) => setDropoff(e.target.value)}
-                    placeholder="e.g., 14 Innovation Walk, Clayton"
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-                  />
-                  <div className="mt-2 text-xs text-slate-500">
-                    Popular destinations:
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <button 
-                        type="button"
-                        onClick={() => setDropoff("Monash University Clayton Campus")}
-                        className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs hover:bg-green-200"
-                      >
-                        Clayton
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setDropoff("Monash University Caulfield Campus")}
-                        className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs hover:bg-green-200"
-                      >
-                        Caulfield
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setDropoff("Monash University Peninsula Campus")}
-                        className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs hover:bg-green-200"
-                      >
-                        Peninsula
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <AutocompleteInput
+                  value={pickup}
+                  onChange={setPickup}
+                  setLocation={setPickupLoc}
+                  showErrors={showErrors}
+                  error={errors.pickup}
+                  placeholder="e.g., 26 Sir John Monash Dr, Caulfield"
+                  label="Pickup Location"
+                  labelClassName="block text-sm font-medium mb-1"
+                  className="w-full rounded-2xl border px-3 py-2"
+                />
+                <AutocompleteInput
+                  value={dropoff}
+                  onChange={setDropoff}
+                  setLocation={setDropoffLoc}
+                  showErrors={showErrors}
+                  error={errors.dropoff}
+                  placeholder="e.g., 14 Innovation Walk, Clayton"
+                  label="Dropoff Location"
+                  labelClassName="block text-sm font-medium mb-1"
+                  className="w-full rounded-2xl border px-3 py-2"
+                />
               </div>
 
               {/* Timing */}
               <div className="grid sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-1">
+                <div>
                   <span className="block text-sm font-medium mb-1">When</span>
                   <div className="flex gap-2">
                     <button
@@ -233,54 +196,59 @@ export default function RideShareBooking() {
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    disabled={whenNow}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2 disabled:bg-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Time</label>
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    disabled={whenNow}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2 disabled:bg-slate-100"
-                  />
-                </div>
+
+                <TextInput
+                  label="Date"
+                  type="date"
+                  value={date}
+                  onChange={setDate}
+                  disabled={whenNow}
+                  required
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2 disabled:bg-slate-100"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
+
+                <TextInput
+                  label="Time"
+                  type="time"
+                  value={time}
+                  onChange={setTime}
+                  disabled={whenNow}
+                  required={!whenNow}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2 disabled:bg-slate-100"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
               </div>
 
               {/* Ride prefs */}
               <div className="grid sm:grid-cols-3 gap-4">
+                <TextInput
+                  label="Passengers"
+                  type="number"
+                  value={String(passengers)}
+                  onChange={(val) => setPassengers(parseInt(val || "1"))}
+                  min={1}
+                  max={6}
+                  required
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
+                <TextInput
+                  label="Luggage"
+                  type="number"
+                  value={String(luggage)}
+                  onChange={(val) => setLuggage(parseInt(val || "0"))}
+                  min={0}
+                  max={6}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
                 <div>
-                  <label className="block text-sm font-medium mb-1">Passengers</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={6}
-                    value={passengers}
-                    onChange={(e) => setPassengers(parseInt(e.target.value || "1"))}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Luggage</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={6}
-                    value={luggage}
-                    onChange={(e) => setLuggage(parseInt(e.target.value || "0"))}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ride type</label>
+                  <label className="block text-sm font-medium mb-1">Ride Type</label>
                   <select
                     value={rideType}
                     onChange={(e) => setRideType(e.target.value as any)}
@@ -295,27 +263,30 @@ export default function RideShareBooking() {
 
               {/* Contact & extras */}
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Contact phone</label>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g., 04xx xxx xxx or +61 …"
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">AU format accepted (0… or +61…)</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Promo code</label>
-                  <input
-                    value={promo}
-                    onChange={(e) => setPromo(e.target.value)}
-                    placeholder="Try WELCOME10"
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
+                <TextInput
+                  label="Contact Phone"
+                  value={phone}
+                  onChange={setPhone}
+                  placeholder="e.g., 04xx xxx xxx or +61 …"
+                  error={errors.phone}
+                  required
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
+
+                <TextInput
+                  label="Promo Code"
+                  value={promo}
+                  onChange={setPromo}
+                  placeholder="Try WELCOME10"
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border px-3 py-2"
+                  labelClassName="block text-sm font-medium mb-1"
+                />
               </div>
 
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium mb-1">Notes for driver (optional)</label>
                 <textarea
@@ -430,7 +401,7 @@ export default function RideShareBooking() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!valid || submitting}
+                    disabled={submitting}
                     className="px-6 py-2 rounded-2xl bg-slate-900 text-white disabled:opacity-60 hover:bg-slate-800 transition-colors"
                   >
                     {submitting ? "Booking…" : "Book ride"}

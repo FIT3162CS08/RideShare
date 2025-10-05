@@ -1,23 +1,40 @@
 "use client";
 import { useEffect, useRef } from "react";
+import TextInput from "./TextInput";
 
 type Props = {
+  label: string;
   value: string;
   onChange: (val: string) => void;
   setLocation: (val: string) => void;
   placeholder?: string;
   className?: string;
+  labelClassName?: string;
+  required?: boolean;
+  error?: string | null;
+  showErrors?: boolean;
 };
 
-export default function AutocompleteInput({ value, onChange, setLocation, placeholder, className }: Props) {
+export default function AutocompleteInput({
+  label,
+  value,
+  onChange,
+  setLocation,
+  placeholder,
+  className,
+  labelClassName,
+  required,
+  error,
+  showErrors,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!inputRef.current) return;
 
-    const autocomplete = new google.maps.places.Autocomplete(inputRef.current!, {
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
       fields: ["formatted_address", "geometry", "name"],
-      componentRestrictions: { country: "au" }, // optional: limit to Australia
+      componentRestrictions: { country: "au" },
     });
 
     autocomplete.addListener("place_changed", () => {
@@ -27,15 +44,20 @@ export default function AutocompleteInput({ value, onChange, setLocation, placeh
         setLocation(place.formatted_address);
       }
     });
-  }, [onChange]);
+  }, [onChange, setLocation]);
 
   return (
-    <input
-      ref={inputRef}
+    <TextInput
+      label={label}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      ref={inputRef}
+      onChange={onChange}
       placeholder={placeholder}
+      required={required}
+      error={error}
       className={className}
+      labelClassName={labelClassName}
+      showErrors={showErrors}
     />
   );
 }
