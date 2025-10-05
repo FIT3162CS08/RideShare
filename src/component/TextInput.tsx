@@ -8,7 +8,6 @@ type Props = {
   error?: string | null;
   placeholder?: string;
   required?: boolean;
-//   validate?: (val: string) => string | null; // custom validator returns error message
   type?: string;
   className?: string;
   labelClassName?: string;
@@ -29,14 +28,14 @@ export default forwardRef<HTMLInputElement, Props>(function TextInput({
   ...inputProps
 }: Props, ref?: React.Ref<HTMLInputElement>) {
   const [touched, setTouched] = useState(false);
-  console.log("TEST", touched, showErrors)
 
 //   setTouched(showErrors);
   const shouldShowError = showErrors && !touched && !!error;
+  console.log({label,shouldShowError, showErrors, touched, error});
 
   useEffect(() => {
     setTouched(!showErrors);
-  }, [error]);
+  }, [error, showErrors]);
 
   return (
     <div>

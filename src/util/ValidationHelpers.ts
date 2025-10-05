@@ -78,3 +78,49 @@ export const validateLettersOnly = combineValidators(
   validateRequired("This field"),
   matchesRegex(/^[A-Za-z\s]+$/, "Only letters are allowed")
 );
+
+// Date validator (must be today or within 7 days)
+export const validateDate = combineValidators(
+  validateRequired("Date"),
+  (val: string): string | null => {
+    const inputDate = new Date(val);
+    const today = new Date();
+    const maxDate = new Date();
+
+    // normalize time to midnight for comparison
+    today.setHours(0, 0, 0, 0);
+    maxDate.setHours(0, 0, 0, 0);
+    maxDate.setDate(today.getDate() + 7);
+
+    if (isNaN(inputDate.getTime())) {
+      return "Invalid date format";
+    }
+    if (inputDate < today) {
+      return "Date cannot be in the past";
+    }
+    if (inputDate > maxDate) {
+      return "Bookings can only be made up to 7 days in advance";
+    }
+
+    return null;
+  }
+);
+
+
+// Time validator (must be later than current time today)
+export const validateTime = (val: string): string | null => {
+  console.log("Test")
+  console.log(val)
+  const [hours, minutes] = val.split(":").map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return "Invalid time format";
+
+  console.log(hours, minutes)
+  const now = new Date();
+  const inputTime = new Date();
+  inputTime.setHours(hours, minutes, 0, 0);
+  console.log(inputTime, now, (inputTime < now))
+
+
+  if (inputTime < now) return "Time cannot be in the past";
+  return null;
+};

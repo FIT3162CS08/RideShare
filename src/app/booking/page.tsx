@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import AutocompleteInput from "@/component/AutocompleteInput";
 import TextInput from "@/component/TextInput";
-import { validatePhoneNumber, validateRequired } from "@/util/ValidationHelpers";
+import { validateDate, validatePhoneNumber, validateRequired, validateTime } from "@/util/ValidationHelpers";
 
 export default function RideShareBooking() {
   const [pickup, setPickup] = useState("");
@@ -12,8 +12,8 @@ export default function RideShareBooking() {
   const [dropoff, setDropoff] = useState("");
   const [dropoffLoc, setDropoffLoc] = useState("");
   const [whenNow, setWhenNow] = useState(true);
-  const [date, setDate] = useState<string>(defaultDate());
-  const [time, setTime] = useState<string>(defaultTime());
+  const [date, setDate] = useState<string>(currentDate());
+  const [time, setTime] = useState<string>(currentTime());
   const [rideType, setRideType] = useState<"standard" | "xl" | "premium">("standard");
   const [passengers, setPassengers] = useState(1);
   const [luggage, setLuggage] = useState(0);
@@ -29,14 +29,22 @@ export default function RideShareBooking() {
   const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
   const [showErrors, setShowErrors] = useState(false);
 
+  useEffect(() => {
+    if (whenNow) {
+      setDate(currentDate());
+      setTime(currentTime());
+    }
+  }, [whenNow]);
+
   const validateAll = () => {
     const newErrors = {
       phone: validatePhoneNumber(phone),
       pickup: validateRequired("Pickup location")(pickup),
       dropoff: validateRequired("Dropoff location")(dropoff),
+      date: whenNow ? null : validateDate(date),
+      time: whenNow ? null : (new Date(date).getDate() === new Date().getDate() ? validateTime(time) : null),
     };
     setErrors(newErrors);
-    console.log(newErrors)
     return Object.values(newErrors).every((e) => !e);
   };
 
@@ -59,18 +67,6 @@ export default function RideShareBooking() {
     const gst = 0.1;
     return Math.max(0, subtotal * promoCut * (1 + gst));
   }, [rideType, passengers, luggage, whenNow, distanceKm, promo]);
-
-
-
-  // const valid = useMemo(() => {
-  //   const compact = phone.split(" ").join("");
-  //   const startsOk = compact.startsWith("+61") || compact.startsWith("0");
-  //   const digits = Array.from(compact).filter(ch => "0123456789".includes(ch)).join("");
-  //   const lengthOk = digits.length >= 9 && digits.length <= 11;
-  //   if (!pickup || !dropoff || !startsOk || !lengthOk) return false;
-  //   if (!whenNow && (!date || !time)) return false;
-  //   return true;
-  // }, [pickup, dropoff, phone, whenNow, date, time]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,8 +116,8 @@ export default function RideShareBooking() {
     setDropoff("");
     setDropoffLoc("");
     setWhenNow(true);
-    setDate(defaultDate());
-    setTime(defaultTime());
+    setDate(currentDate());
+    setTime(currentTime());
     setRideType("standard");
     setPassengers(1);
     setLuggage(0);
@@ -159,7 +155,6 @@ export default function RideShareBooking() {
                   error={errors.pickup}
                   placeholder="e.g., 26 Sir John Monash Dr, Caulfield"
                   label="Pickup Location"
-                  labelClassName="block text-sm font-medium mb-1"
                   className="w-full rounded-2xl border px-3 py-2"
                 />
                 <AutocompleteInput
@@ -170,12 +165,10 @@ export default function RideShareBooking() {
                   error={errors.dropoff}
                   placeholder="e.g., 14 Innovation Walk, Clayton"
                   label="Dropoff Location"
-                  labelClassName="block text-sm font-medium mb-1"
                   className="w-full rounded-2xl border px-3 py-2"
                 />
               </div>
 
-              {/* Timing */}
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <span className="block text-sm font-medium mb-1">When</span>
@@ -183,14 +176,18 @@ export default function RideShareBooking() {
                     <button
                       type="button"
                       onClick={() => setWhenNow(true)}
-                      className={`px-3 py-2 rounded-2xl border ${whenNow ? "border-slate-900 bg-slate-50" : "border-slate-300"}`}
+                      className={`px-3 py-2 rounded-2xl border ${
+                        whenNow ? "border-slate-900 bg-slate-50" : "border-slate-300"
+                      }`}
                     >
                       Now
                     </button>
                     <button
                       type="button"
                       onClick={() => setWhenNow(false)}
-                      className={`px-3 py-2 rounded-2xl border ${!whenNow ? "border-slate-900 bg-slate-50" : "border-slate-300"}`}
+                      className={`px-3 py-2 rounded-2xl border ${
+                        !whenNow ? "border-slate-900 bg-slate-50" : "border-slate-300"
+                      }`}
                     >
                       Schedule
                     </button>
@@ -203,19 +200,18 @@ export default function RideShareBooking() {
                   value={date}
                   onChange={setDate}
                   disabled={whenNow}
-                  required
+                  error={errors.date}
                   showErrors={showErrors}
                   className="w-full rounded-2xl border px-3 py-2 disabled:bg-slate-100"
                   labelClassName="block text-sm font-medium mb-1"
                 />
-
                 <TextInput
                   label="Time"
                   type="time"
                   value={time}
                   onChange={setTime}
                   disabled={whenNow}
-                  required={!whenNow}
+                  error={errors.time}
                   showErrors={showErrors}
                   className="w-full rounded-2xl border px-3 py-2 disabled:bg-slate-100"
                   labelClassName="block text-sm font-medium mb-1"
@@ -313,7 +309,7 @@ export default function RideShareBooking() {
                 </div>
               </div>
 
-              {/* Fare Estimation - Enhanced */}
+              {/* Fare Estimation */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-200">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-900">Fare Estimate</h3>
@@ -431,7 +427,7 @@ export default function RideShareBooking() {
           </aside>
         </main>
 
-        {/* Confirmation Modal (fallback when no trip id is returned) */}
+        {/* Confirmation Modal */}
         {showConfirm && (
           <div className="fixed inset-0 z-20 bg-black/40 grid place-items-center p-4">
             <div className="max-w-lg w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-xl">
@@ -452,7 +448,6 @@ export default function RideShareBooking() {
           </div>
         )}
 
-        {/* Footer */}
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
           <div>© {new Date().getFullYear()} RideShare. Web-only localhost demo.</div>
         </footer>
@@ -461,14 +456,24 @@ export default function RideShareBooking() {
   );
 }
 
-function defaultDate() {
+// function defaultDate() {
+//   const d = new Date();
+//   console.log(d);
+//   d.setMinutes(d.getMinutes() + 10);
+//   console.log(d.toISOString().split("T")[0])
+//   return d.toISOString().split("T")[0];
+// }
+
+function currentDate() {
   const d = new Date();
-  d.setMinutes(d.getMinutes() + 10);
-  return d.toISOString().slice(0, 10);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
-function defaultTime() {
+
+function currentTime() {
   const d = new Date();
-  d.setMinutes(d.getMinutes() + 10);
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
