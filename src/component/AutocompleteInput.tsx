@@ -6,7 +6,7 @@ type Props = {
   label?: string;
   value: string;
   onChange: (val: string) => void;
-  setLocation: (val: string) => void;
+  setLocation: (place: google.maps.places.PlaceResult) => void;
   placeholder?: string;
   className?: string;
   labelClassName?: string;
@@ -33,7 +33,7 @@ export default function AutocompleteInput({
     if (!inputRef.current) return;
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      fields: ["formatted_address", "geometry", "name"],
+      fields: ["formatted_address", "geometry", "name", "place_id"],
       componentRestrictions: { country: "au" },
     });
 
@@ -41,7 +41,7 @@ export default function AutocompleteInput({
       const place = autocomplete.getPlace();
       if (place?.formatted_address) {
         onChange(place.formatted_address);
-        setLocation(place.formatted_address);
+        setLocation(place);
       }
     });
   }, [onChange, setLocation]);

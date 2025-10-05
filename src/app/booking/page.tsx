@@ -8,9 +8,9 @@ import { validateDate, validatePhoneNumber, validateRequired, validateTime } fro
 
 export default function RideShareBooking() {
   const [pickup, setPickup] = useState("");
-  const [pickupLoc, setPickupLoc] = useState("");
+  const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(null);
   const [dropoff, setDropoff] = useState("");
-  const [dropoffLoc, setDropoffLoc] = useState("");
+  const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(null);
   const [whenNow, setWhenNow] = useState(true);
   const [date, setDate] = useState<string>(currentDate());
   const [time, setTime] = useState<string>(currentTime());
@@ -112,9 +112,9 @@ export default function RideShareBooking() {
 
   function resetForm() {
     setPickup("");
-    setPickupLoc("");
+    setPickupLoc(null);
     setDropoff("");
-    setDropoffLoc("");
+    setDropoffLoc(null);
     setWhenNow(true);
     setDate(currentDate());
     setTime(currentTime());

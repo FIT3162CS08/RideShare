@@ -1,5 +1,6 @@
 "use client";
 
+import AutocompleteInput from "@/component/AutocompleteInput";
 import { validateBirthday, validateEmail, validateLettersOnly, validatePhoneNumber } from "@/util/ValidationHelpers";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [location, setLocation] = useState<google.maps.places.PlaceResult | null>(null);
   const [birthday, setBirthday] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -60,6 +62,11 @@ export default function Signup() {
       return;
     }
 
+    if (address != location?.formatted_address) {
+      setError("Please select an address from the suggestions.");
+      return;
+    }
+
     // Birthday validation
     if (birthday) {
       const BirthdayError = validateBirthday(birthday);
@@ -105,7 +112,7 @@ export default function Signup() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
             type="email"
@@ -113,7 +120,7 @@ export default function Signup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
             type="text"
@@ -121,15 +128,15 @@ export default function Signup() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
-          <input
-            type="text"
+          <AutocompleteInput
             placeholder="Address"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={setAddress}
+            setLocation={setLocation}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
             type="date"
@@ -137,7 +144,7 @@ export default function Signup() {
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
             type="password"
@@ -145,7 +152,7 @@ export default function Signup() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
             type="password"
@@ -153,7 +160,7 @@ export default function Signup() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
-            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
 
           {error && (

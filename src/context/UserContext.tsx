@@ -1,11 +1,12 @@
 "use client";
 
+import { UserType } from "@/models/User";
 import { createContext, useContext, useEffect, useState } from "react";
 
-type User = { id: string; email: string; name?: string; role?: string } | null;
+// type User = { id: string; email: string; name?: string; role?: string } | null;
 
 type UserContextType = {
-  user: User;
+  user: UserType;
   loading: boolean;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
@@ -19,7 +20,7 @@ const UserContext = createContext<UserContextType>({
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(null);
+  const [user, setUser] = useState<UserType>(null);
   const [loading, setLoading] = useState(true);
 
   const API_BASE = '/api'

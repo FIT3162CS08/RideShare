@@ -32,14 +32,15 @@ export async function POST(req: NextRequest) {
     pushNotifs: true,
     saveReceipts: true,
     card: true,
+    bookings: [],
   });
 
-  const payload = { id: user._id.toString(), email: user.email, name: user.name };
+  // const payload = { id: user._id.toString(), email: user.email, name: user.name };
 
   // Create JWT token
-  const token = signToken(payload);
+  const token = signToken({ id: user._id.toString() });
 
-  const res = NextResponse.json(payload);
+  const res = NextResponse.json({user});
   res.cookies.set("access_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

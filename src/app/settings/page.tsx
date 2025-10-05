@@ -12,36 +12,31 @@ import {
   validateLettersOnly,
   validateBirthday,
 } from "@/util/ValidationHelpers";
+import { useUser } from "@/context/UserContext";
 
 export default function RideShareSettings() {
-  const defaultProfile = {
-    savedName: "John Doe",
-    savedPhone: "0412 345 678",
-    email: "johndoe@example.com",
-    birthday: "1990-01-01",
-    promoCode: "WELCOME10",
-    address: "123 Main St, Melbourne VIC",
-    notifications: true,
-    saveReceipts: true,
-    defaultPayment: "card" as "card" | "cash",
-  };
+  const {user, refreshUser} = useUser();
+  // refreshUser()
+  const userData = user!
+  console.log(userData)
+  if (!user) return;
 
-  const [savedName, setSavedName] = useState(defaultProfile.savedName);
-  const [savedPhone, setSavedPhone] = useState(defaultProfile.savedPhone);
-  const [email, setEmail] = useState(defaultProfile.email);
-  const [birthday, setBirthday] = useState(defaultProfile.birthday);
-  const [promoCode, setPromoCode] = useState(defaultProfile.promoCode);
-  const [address, setAddress] = useState(defaultProfile.address);
-  const [googleLoc, setGLoc] = useState(defaultProfile.address);
+  const [name, setSavedName] = useState(userData.name);
+  const [phone, setPhone] = useState(userData.phone);
+  const [email, setEmail] = useState(userData.email);
+  const [birthday, setBirthday] = useState(userData.birthday);
+  const [promoCode, setPromoCode] = useState("");
+  const [address, setAddress] = useState(userData?.address);
+  const [googleLoc, setGLoc] = useState<google.maps.places.PlaceResult | null>(null);
 
   const [notifications, setNotifications] = useState(
-    defaultProfile.notifications
+    userData.pushNotifs
   );
   const [saveReceipts, setSaveReceipts] = useState(
-    defaultProfile.saveReceipts
+    userData.saveReceipts
   );
   const [defaultPayment, setDefaultPayment] = useState<"card" | "cash">(
-    defaultProfile.defaultPayment
+    userData.card ? "card" : "cash"
   );
 
   const [saved, setSaved] = useState(false);
@@ -50,8 +45,8 @@ export default function RideShareSettings() {
 
   function validateAll() {
     const newErrors = {
-      savedName: combineValidators(validateRequired("Name"), validateLettersOnly)(savedName),
-      savedPhone: validatePhoneNumber(savedPhone),
+      savedName: combineValidators(validateRequired("Name"), validateLettersOnly)(name),
+      savedPhone: validatePhoneNumber(phone),
       email: validateEmail(email),
       birthday: validateBirthday(birthday),
       address: validateRequired("Address")(address),
@@ -61,15 +56,15 @@ export default function RideShareSettings() {
   }
 
   function handleReset() {
-    setSavedName(defaultProfile.savedName);
-    setSavedPhone(defaultProfile.savedPhone);
-    setEmail(defaultProfile.email);
-    setBirthday(defaultProfile.birthday);
-    setPromoCode(defaultProfile.promoCode);
-    setAddress(defaultProfile.address);
-    setNotifications(defaultProfile.notifications);
-    setSaveReceipts(defaultProfile.saveReceipts);
-    setDefaultPayment(defaultProfile.defaultPayment);
+    setSavedName(userData.name);
+    setPhone(userData.phone);
+    setEmail(userData.email);
+    setBirthday(userData.birthday);
+    setPromoCode("");
+    setAddress(userData.address);
+    setNotifications(userData.pushNotifs);
+    setSaveReceipts(userData.saveReceipts);
+    setDefaultPayment(userData.card ? "card" : "cash");
     setSaved(false);
     setErrors({});
     setShowErrors(false);
@@ -111,7 +106,7 @@ export default function RideShareSettings() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <TextInput
                   label="Name"
-                  value={savedName}
+                  value={name}
                   onChange={setSavedName}
                   error={errors.savedName}
                   showErrors={showErrors}
@@ -119,8 +114,8 @@ export default function RideShareSettings() {
                 />
                 <TextInput
                   label="Phone"
-                  value={savedPhone}
-                  onChange={setSavedPhone}
+                  value={phone}
+                  onChange={setPhone}
                   error={errors.savedPhone}
                   showErrors={showErrors}
                   placeholder="e.g., 04xx xxx xxx"
