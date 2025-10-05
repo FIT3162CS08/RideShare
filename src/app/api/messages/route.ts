@@ -2,26 +2,64 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { ConversationModel } from "@/models/Conversation";
 import { DMessageModel } from "@/models/DMessage";
+import mongoose from "mongoose";
 
 export async function GET(req: NextRequest) {
     await connectToDatabase();
     try {
         const { searchParams } = new URL(req.url);
-        const conversationId = searchParams.get("conversationId");
-        if (!conversationId) {
+        const driverId = searchParams.get("driverId");
+        const userObjectId = new mongoose.Types.ObjectId(driverId);
+
+        if (!driverId) {
             return NextResponse.json(
-                { error: "conversationId is required" },
+                { error: "userId is required" },
                 { status: 400 }
             );
         }
 
-        const messages = await DMessageModel.find({ conversationId }).sort({
-            createdAt: 1,
-        }); // oldest → newest
+        const conversationsWithMessages = await ConversationModel.aggregate([
+            {
+                $match: {
+                    participants: { $in: [userObjectId] },
+                },
+            },
+            // Lookup users for participants
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "participants",
+                    foreignField: "_id",
+                    as: "participantDetails",
+                },
+            },
+            // Map only _id and name to participants
+            {
+                $addFields: {
+                    participants: {
+                        $map: {
+                            input: "$participantDetails",
+                            as: "p",
+                            in: { _id: "$$p._id", name: "$$p.name" },
+                        },
+                    },
+                },
+            },
+            // Remove temporary participantDetails field
+            { $unset: "participantDetails" },
+            // Join messages
+            {
+                $lookup: {
+                    from: "dmessages",
+                    localField: "_id",
+                    foreignField: "conversationId",
+                    as: "messages",
+                },
+            },
+            { $sort: { updatedAt: -1 } },
+        ]);
 
-        const conversation = await ConversationModel.findById(conversationId);
-
-        return NextResponse.json({ messages, conversation }, { status: 200 });
+        return NextResponse.json(conversationsWithMessages, { status: 200 });
     } catch (err) {
         console.error("❌ GET messages error:", err);
         return NextResponse.json({ error: "Server error" }, { status: 500 });

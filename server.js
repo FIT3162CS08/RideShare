@@ -26,7 +26,6 @@ app.prepare().then(() => {
                 const { conversationId, senderId, receiverId, newMessage } =
                     data;
 
-                console.log("DATA: ", data);
                 if (
                     !conversationId ||
                     !senderId ||
@@ -39,7 +38,6 @@ app.prepare().then(() => {
                     });
                 }
 
-                console.log("POSTING MESSAGE");
                 // Save message in DB
                 const newMessageRes = await DMessageModel.create({
                     conversationId,
@@ -48,19 +46,21 @@ app.prepare().then(() => {
                     message: newMessage,
                 });
 
-                console.log("NEW MESSAGE: ", newMessageRes);
-
                 // Update conversation
                 await ConversationModel.findByIdAndUpdate(conversationId, {
                     lastMessage: newMessage,
                     updatedAt: Date.now(),
                 });
 
-                console.log("New message saved:", newMessageRes);
-
                 // Emit the new message to sender + receiver
-                io.to(senderId).emit("newMessage", newMessageRes);
-                io.to(receiverId).emit("newMessage", newMessageRes);
+                io.to(senderId).emit("newMessage", {
+                    msg: newMessageRes,
+                    conversationId,
+                });
+                io.to(receiverId).emit("newMessage", {
+                    msg: newMessageRes,
+                    conversationId,
+                });
             } catch (err) {
                 console.log("❌ Socket message error:", err);
                 socket.emit("error", { error: "Server error" });

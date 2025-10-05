@@ -5,6 +5,7 @@ import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
 import BookingCard from "@/component/booking/BookingCard";
+import Message from "@/component/message/Message";
 
 // Driver Portal — localhost demo
 export default function DriverPortalPage() {
@@ -25,8 +26,6 @@ export default function DriverPortalPage() {
 
     const [showChat, setShowChat] = useState(false);
     const { user } = useUser();
-
-    console.log(data);
 
     function goOnline() {
         setOnline(true);
@@ -73,8 +72,6 @@ export default function DriverPortalPage() {
         };
         fetchBookings();
     }, [user]);
-
-    console.log("DATA: ", data);
 
     return (
         <ProtectedRoute>
@@ -378,6 +375,7 @@ export default function DriverPortalPage() {
                     © {new Date().getFullYear()} RideShare Driver. Localhost
                     demo.
                 </footer>
+                <Message />
             </div>
         </ProtectedRoute>
     );

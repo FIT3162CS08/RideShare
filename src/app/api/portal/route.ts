@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
     try {
-        console.log("/portal route");
         await connectToDatabase();
 
         const { searchParams } = new URL(req.url);

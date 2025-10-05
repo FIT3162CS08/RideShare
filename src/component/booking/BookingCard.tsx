@@ -9,36 +9,65 @@ import {
     CreditCard,
     Star,
     User,
+    MessageCircleMore,
 } from "lucide-react";
+import { useUser } from "@/context/UserContext";
 
 export default function BookingCard({ booking }) {
     const [open, setOpen] = useState(false);
-    const user = booking.userId; // populated user
+
+    // The person who requested the ride
+    const passenger = booking.userId;
+
+    // driver
+    const { user } = useUser();
 
     async function onAccept() {
+        if (!user) return;
         // Accept the ride
         await fetch(`/api/bookings/accept`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                driverId: user._id,
+                driverId: user.id,
                 bookingId: booking._id,
             }), // current driver
         });
     }
 
     async function onRideStart() {
+        if (!user) return;
         // Make the ride
         await fetch(`/api/bookings/ride_start`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                driverId: user._id,
+                driverId: user.id,
                 bookingId: booking._id,
             }), // current driver
         });
 
         // Then refresh
+    }
+
+    console.log("BOOKING: ", booking);
+
+    async function startConversation() {
+        if (!user) return;
+        // Make a conversation
+        await fetch(`/api/messages/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                passenger: booking.userId._id,
+                driver: user.id,
+                pickup: booking.pickup,
+                dropoff: booking.dropoff,
+                date: booking.date,
+            }), // current driver
+        });
+
+        // Open message window
     }
 
     return (
@@ -110,21 +139,27 @@ export default function BookingCard({ booking }) {
                     </div>
 
                     {/* User Info */}
-                    {user && (
+                    {passenger && (
                         <div className="border-t pt-3 mt-3">
                             <div className="flex items-center gap-2 text-gray-800">
                                 <User className="w-4 h-4" />
-                                <span className="font-medium">{user.name}</span>
+                                <span className="font-medium">
+                                    {passenger.name}
+                                </span>
+                                <MessageCircleMore
+                                    onClick={() => startConversation()}
+                                    className="w-4 h-4 hover:cursor-pointer transition-all duration-75 hover:scale-105"
+                                />
                             </div>
                             <div className="flex items-center gap-1 text-yellow-600 mt-1">
                                 <Star className="w-4 h-4 fill-yellow-400" />
                                 <span>
-                                    {user.ratingCount == 0
+                                    {passenger.ratingCount == 0
                                         ? "N/A"
-                                        : user.rating?.toFixed(1) || "N/A"}
+                                        : passenger.rating?.toFixed(1) || "N/A"}
                                 </span>
                                 <span className="text-gray-500 text-xs ml-1">
-                                    ({user.ratingCount || 0} reviews)
+                                    ({passenger.ratingCount || 0} reviews)
                                 </span>
                             </div>
                         </div>
