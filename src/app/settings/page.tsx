@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import AutocompleteInput from "@/component/AutocompleteInput";
 import TextInput from "@/component/TextInput";
@@ -16,7 +16,6 @@ import { useUser } from "@/context/UserContext";
 
 export default function RideShareSettings() {
   const {user, refreshUser} = useUser();
-  // refreshUser()
   const userData = user!
   console.log(userData)
   if (!user) return;
@@ -26,7 +25,7 @@ export default function RideShareSettings() {
   const [email, setEmail] = useState(userData.email);
   const [birthday, setBirthday] = useState(userData.birthday);
   const [promoCode, setPromoCode] = useState("");
-  const [address, setAddress] = useState(userData?.address);
+  const [address, setAddress] = useState(userData.address);
   const [googleLoc, setGLoc] = useState<google.maps.places.PlaceResult | null>(null);
 
   const [notifications, setNotifications] = useState(
@@ -49,32 +48,61 @@ export default function RideShareSettings() {
       savedPhone: validatePhoneNumber(phone),
       email: validateEmail(email),
       birthday: validateBirthday(birthday),
-      address: validateRequired("Address")(address),
+      address: validateRequired("Address")(address) || (address == googleLoc?.formatted_address ? null : "Please select an address from the dropdown"),
     };
     setErrors(newErrors);
     return Object.values(newErrors).every((e) => !e);
   }
 
-  function handleReset() {
-    setSavedName(userData.name);
-    setPhone(userData.phone);
-    setEmail(userData.email);
-    setBirthday(userData.birthday);
-    setPromoCode("");
-    setAddress(userData.address);
-    setNotifications(userData.pushNotifs);
-    setSaveReceipts(userData.saveReceipts);
-    setDefaultPayment(userData.card ? "card" : "cash");
+  async function handleReset() {
+    await refreshUser();
     setSaved(false);
     setErrors({});
     setShowErrors(false);
   }
 
-  function handleSave() {
+  useEffect(() => {
+    if (userData) {
+      setSavedName(userData.name);
+      setPhone(userData.phone);
+      setEmail(userData.email);
+      setBirthday(userData.birthday);
+      setAddress(userData.address);
+      setNotifications(userData.pushNotifs);
+      setSaveReceipts(userData.saveReceipts);
+      setDefaultPayment(userData.card ? "card" : "cash");
+    }
+  }, [userData]);
+
+  async function handleSave() {
     setShowErrors(true);
     if (!validateAll()) return;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    try {
+      const res = await fetch("/api/auth/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          email,
+          birthday,
+          address,
+          pushNotifs: notifications,
+          saveReceipts,
+          card: defaultPayment,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update");
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message);
+    }
   }
 
   return (
