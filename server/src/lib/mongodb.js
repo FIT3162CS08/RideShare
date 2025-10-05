@@ -6,13 +6,10 @@ async function connectDB() {
     if (isConnected) return;
 
     try {
-        await mongoose.connect(
-            "mongodb+srv://erictheov_db_user:5BGIbLGDDiGV8E6F@rideshare.delpkmg.mongodb.net/?retryWrites=true&w=majority&appName=RideShare",
-            {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-            }
-        );
+        await mongoose.connect("XXXX", {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
 
         isConnected = true;
         console.log("✅ MongoDB connected");
