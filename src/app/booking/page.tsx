@@ -31,6 +31,12 @@ export default function RideShareBooking() {
   const [showPayment, setShowPayment] = useState(false);
   const [tripId, setTripId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [showPaymentComplete, setShowPaymentComplete] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<{
+    amount: number;
+    tripId: string;
+    paymentId: string;
+  } | null>(null);
 
   // Removed localStorage draft persistence; we now rely on backend.
 
@@ -69,11 +75,29 @@ export default function RideShareBooking() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid || !user) return;
+    if (!valid || !user) {
+      console.log("Validation failed or user not authenticated:", { valid, user });
+      return;
+    }
     setSubmitting(true);
     setPaymentError(null);
     
     try {
+      console.log("Creating booking with data:", {
+        pickup,
+        dropoff,
+        whenNow,
+        date,
+        time,
+        rideType,
+        passengers,
+        luggage,
+        phone,
+        notes,
+        promo,
+        payment,
+        userId: user.id,
+      });
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,10 +114,16 @@ export default function RideShareBooking() {
           notes,
           promo,
           payment,
+          userId: user.id,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create booking");
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Booking API error:", errorData);
+        throw new Error(`Failed to create booking: ${errorData.error || res.statusText}`);
+      }
       const data = await res.json();
+      console.log("Booking created successfully:", data);
       const newTripId = data.tripId;
       
       if (newTripId) {
@@ -113,8 +143,8 @@ export default function RideShareBooking() {
       setBookingRef(ref || null);
       setShowConfirm(true);
     } catch (err) {
-      console.error(err);
-      setPaymentError("Could not create booking. Please try again.");
+      console.error("Booking error:", err);
+      setPaymentError(err instanceof Error ? err.message : "Could not create booking. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -122,13 +152,31 @@ export default function RideShareBooking() {
 
   function handlePaymentSuccess(paymentId: string) {
     if (tripId) {
-      window.location.href = `/trip/${tripId}`;
+      setPaymentDetails({
+        amount: fare,
+        tripId,
+        paymentId,
+      });
+      setShowPayment(false);
+      setShowPaymentComplete(true);
     }
   }
 
   function handlePaymentError(error: string) {
     setPaymentError(error);
     setShowPayment(false);
+  }
+
+  function handleViewTrip() {
+    if (paymentDetails) {
+      setShowPaymentComplete(false);
+      window.location.href = `/trip/${paymentDetails.tripId}`;
+    }
+  }
+
+  function handleBookAnother() {
+    setShowPaymentComplete(false);
+    resetForm();
   }
 
   function resetForm() {
@@ -488,6 +536,62 @@ export default function RideShareBooking() {
             </div>
           </aside>
         </main>
+
+        {/* Payment Complete Modal */}
+        {showPaymentComplete && paymentDetails && (
+          <div className="fixed inset-0 z-30 bg-black/40 grid place-items-center p-4">
+            <div className="max-w-lg w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Complete!</h2>
+              <p className="text-gray-600 mb-6">Your ride has been successfully booked and paid for.</p>
+              
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Amount Paid:</span>
+                    <span className="font-semibold">${paymentDetails.amount.toFixed(2)} AUD</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">From:</span>
+                    <span className="text-right max-w-48 truncate">{pickup}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">To:</span>
+                    <span className="text-right max-w-48 truncate">{dropoff}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payment ID:</span>
+                    <span className="font-mono text-xs">{paymentDetails.paymentId.slice(-8)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trip ID:</span>
+                    <span className="font-mono text-xs">{paymentDetails.tripId.slice(-8)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleViewTrip}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  View Your Trip
+                </button>
+                <button
+                  onClick={handleBookAnother}
+                  className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Book Another Ride
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Payment Modal */}
         {showPayment && tripId && user && (

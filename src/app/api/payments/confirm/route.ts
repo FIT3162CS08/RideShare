@@ -5,13 +5,19 @@ import { PaymentModel } from "@/models/Payment";
 import { TripModel } from "@/models/Trip";
 import { z } from "zod";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is not set");
+}
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2024-12-18.acacia",
 });
 
 const ConfirmPaymentSchema = z.object({
   paymentIntentId: z.string(),
-  paymentId: z.string(),
+  tripId: z.string(),
+  userId: z.string(),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,7 +34,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { paymentIntentId, paymentId } = parsed.data;
+    const { paymentIntentId, tripId, userId } = parsed.data;
 
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -40,23 +46,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update payment record in database
-    const payment = await PaymentModel.findByIdAndUpdate(
-      paymentId,
+    // Create or update payment record in database
+    const payment = await PaymentModel.findOneAndUpdate(
+      { stripePaymentIntentId: paymentIntentId },
       {
-        status: "completed",
+        tripId,
+        userId,
+        amount: paymentIntent.amount / 100, // Convert from cents
+        currency: paymentIntent.currency,
         stripePaymentIntentId: paymentIntentId,
+        status: "completed",
         completedAt: new Date(),
+        description: paymentIntent.description,
       },
-      { new: true }
+      { upsert: true, new: true }
     );
-
-    if (!payment) {
-      return NextResponse.json(
-        { error: "Payment record not found" },
-        { status: 404 }
-      );
-    }
 
     // Update trip status to indicate payment completed
     await TripModel.findByIdAndUpdate(payment.tripId, {
