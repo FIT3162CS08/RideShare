@@ -2,7 +2,7 @@
 import { forwardRef, useEffect, useState } from "react";
 
 type Props = {
-  label: string;
+  label?: string;
   value: string;
   onChange: (val: string) => void;
   error?: string | null;
@@ -28,18 +28,19 @@ export default forwardRef<HTMLInputElement, Props>(function TextInput({
   ...inputProps
 }: Props, ref?: React.Ref<HTMLInputElement>) {
   const [touched, setTouched] = useState(false);
+//   const [showingError, setShowingError] = useState(showErrors);
 
-//   setTouched(showErrors);
+//   setTouched(!showErrors);
   const shouldShowError = showErrors && !touched && !!error;
   console.log({label,shouldShowError, showErrors, touched, error});
 
-  useEffect(() => {
-    setTouched(!showErrors);
-  }, [error, showErrors]);
+//   useEffect(() => {
+//     setTouched(!showErrors);
+//   }, [error, showErrors]);
 
   return (
     <div>
-      <label className={labelClassName || "text-sm font-medium"}>{label}</label>
+      {label && <label className={labelClassName || "text-sm font-medium"}>{label}</label>}
       <input
         {...inputProps}
         type={type}
@@ -50,6 +51,7 @@ export default forwardRef<HTMLInputElement, Props>(function TextInput({
             onChange(e.target.value)
             if (!touched) setTouched(true)
         }}
+        onBlur={() => setTouched(false)}
         className={`${className} ${
           shouldShowError ? "border-red-500" : "border-slate-300"
         }`}

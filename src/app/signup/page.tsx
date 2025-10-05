@@ -1,5 +1,6 @@
 "use client";
 
+import { validateBirthday, validateEmail, validateLettersOnly, validatePhoneNumber } from "@/util/ValidationHelpers";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,18 +9,48 @@ export default function Signup() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [birthday, setBirthday] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Set in .env.local, e.g. NEXT_PUBLIC_API_BASE=http://localhost:5000
-  const API_BASE = '/api';//process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = '/api'; //process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    // Name validation
+    if (name) {
+      const nameError = validateLettersOnly(name);
+      if (nameError) {
+        setError(nameError + " in name");
+        return;
+      }
+    }
+
+    // Email validation
+    if (email) {
+      const emailError = validateEmail(email);
+      if (emailError) {
+        setError(emailError);
+        return;
+      }
+    }
+
+    // Phone validation
+    if (phone) {
+      const phoneError = validatePhoneNumber(phone);
+      if (phoneError) {
+        setError(phoneError);
+        return;
+      }
+    }
+
+    // Password validation
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -29,13 +60,22 @@ export default function Signup() {
       return;
     }
 
+    // Birthday validation
+    if (birthday) {
+      const BirthdayError = validateBirthday(birthday);
+      if (BirthdayError) {
+        setError(BirthdayError);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
-        credentials: "include", // receive httpOnly cookie
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, phone, address, birthday, password }),
       });
 
       if (!res.ok) {
@@ -44,7 +84,6 @@ export default function Signup() {
         return;
       }
 
-      // Success → backend set cookie → go to home
       router.push("/");
     } catch {
       setError("Network error. Please try again.");
@@ -62,7 +101,7 @@ export default function Signup() {
         <form className="space-y-4" onSubmit={onSubmit}>
           <input
             type="text"
-            placeholder="name"
+            placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -70,15 +109,39 @@ export default function Signup() {
           />
           <input
             type="email"
-            placeholder="email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <input
+            type="text"
+            placeholder="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+          />
+          <input
+            type="text"
+            placeholder="Address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+          />
+          <input
+            type="date"
+            placeholder="Birthday"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            required
+            className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
+          />
+          <input
             type="password"
-            placeholder="password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -86,7 +149,7 @@ export default function Signup() {
           />
           <input
             type="password"
-            placeholder="confirm password"
+            placeholder="Confirm Password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required

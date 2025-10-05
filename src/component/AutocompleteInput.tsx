@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import TextInput from "./TextInput";
 
 type Props = {
-  label: string;
+  label?: string;
   value: string;
   onChange: (val: string) => void;
   setLocation: (val: string) => void;

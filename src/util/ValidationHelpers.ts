@@ -68,7 +68,7 @@ export const validateNumbersOnly = combineValidators(
 // Phone number validator (numbers-only, length 8–15)
 export const validatePhoneNumber = combineValidators(
   validateRequired("Phone number"),
-  matchesRegex(/^[0-9]+$/, "Invalid phone number (digits only)"),
+  matchesRegex(/^[0-9]+$/, "Invalid phone number (digits only, no spaces or symbols)"),
   minLength(8, "Phone number"),
   maxLength(15, "Phone number")
 );
@@ -105,6 +105,27 @@ export const validateDate = combineValidators(
     return null;
   }
 );
+
+export function validateBirthday(dateString: string): string | null {
+  if (!dateString) return "Birthday is required";
+
+  const inputDate = new Date(dateString);
+  const today = new Date();
+
+  if (isNaN(inputDate.getTime())) return "Invalid date format";
+
+  // Must be before today (no future birthdays)
+  if (inputDate >= today) return "Birthday must be before today";
+
+  // Must not be older than 130 years
+  const oldestAllowed = new Date();
+  oldestAllowed.setFullYear(today.getFullYear() - 130);
+
+  if (inputDate < oldestAllowed)
+    return "Birthday must be within the last 130 years";
+
+  return null;
+}
 
 
 // Time validator (must be later than current time today)

@@ -3,6 +3,15 @@
 import React, { useRef, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import AutocompleteInput from "@/component/AutocompleteInput";
+import TextInput from "@/component/TextInput";
+import {
+  validateRequired,
+  validatePhoneNumber,
+  validateEmail,
+  combineValidators,
+  validateLettersOnly,
+  validateBirthday,
+} from "@/util/ValidationHelpers";
 
 export default function RideShareSettings() {
   const defaultProfile = {
@@ -11,7 +20,6 @@ export default function RideShareSettings() {
     email: "johndoe@example.com",
     birthday: "1990-01-01",
     promoCode: "WELCOME10",
-    profilePic: null as string | null,
     address: "123 Main St, Melbourne VIC",
     notifications: true,
     saveReceipts: true,
@@ -23,9 +31,6 @@ export default function RideShareSettings() {
   const [email, setEmail] = useState(defaultProfile.email);
   const [birthday, setBirthday] = useState(defaultProfile.birthday);
   const [promoCode, setPromoCode] = useState(defaultProfile.promoCode);
-  const [profilePic, setProfilePic] = useState<string | null>(
-    defaultProfile.profilePic
-  );
   const [address, setAddress] = useState(defaultProfile.address);
   const [googleLoc, setGLoc] = useState(defaultProfile.address);
 
@@ -40,17 +45,19 @@ export default function RideShareSettings() {
   );
 
   const [saved, setSaved] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function handleProfilePicChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setProfilePic(ev.target?.result as string);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
+  function validateAll() {
+    const newErrors = {
+      savedName: combineValidators(validateRequired("Name"), validateLettersOnly)(savedName),
+      savedPhone: validatePhoneNumber(savedPhone),
+      email: validateEmail(email),
+      birthday: validateBirthday(birthday),
+      address: validateRequired("Address")(address),
+    };
+    setErrors(newErrors);
+    return Object.values(newErrors).every((e) => !e);
   }
 
   function handleReset() {
@@ -59,17 +66,18 @@ export default function RideShareSettings() {
     setEmail(defaultProfile.email);
     setBirthday(defaultProfile.birthday);
     setPromoCode(defaultProfile.promoCode);
-    setProfilePic(defaultProfile.profilePic);
     setAddress(defaultProfile.address);
     setNotifications(defaultProfile.notifications);
     setSaveReceipts(defaultProfile.saveReceipts);
     setDefaultPayment(defaultProfile.defaultPayment);
     setSaved(false);
+    setErrors({});
+    setShowErrors(false);
   }
 
   function handleSave() {
-    console.log(address);
-    console.log(googleLoc);
+    setShowErrors(true);
+    if (!validateAll()) return;
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -86,7 +94,9 @@ export default function RideShareSettings() {
               </div>
               <span className="font-semibold tracking-tight">RideShare</span>
             </div>
-            <div className="text-sm text-slate-600">Settings (localhost demo)</div>
+            <div className="text-sm text-slate-600">
+              Settings (localhost demo)
+            </div>
           </div>
         </header>
 
@@ -99,100 +109,63 @@ export default function RideShareSettings() {
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Profile</h2>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input
-                    value={savedName}
-                    onChange={(e) => setSavedName(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input
-                    value={savedPhone}
-                    onChange={(e) => setSavedPhone(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Birthday</label>
-                  <input
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              {/* Profile Picture */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Profile Picture
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-full border border-slate-300 overflow-hidden">
-                    {profilePic ? (
-                      <img
-                        src={profilePic}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center bg-slate-100 text-slate-400">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50 text-sm"
-                  >
-                    Choose Photo
-                  </button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePicChange}
-                    ref={fileInputRef}
-                    className="hidden"
-                  />
-                </div>
+                <TextInput
+                  label="Name"
+                  value={savedName}
+                  onChange={setSavedName}
+                  error={errors.savedName}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Phone"
+                  value={savedPhone}
+                  onChange={setSavedPhone}
+                  error={errors.savedPhone}
+                  showErrors={showErrors}
+                  placeholder="e.g., 04xx xxx xxx"
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Email"
+                  value={email}
+                  onChange={setEmail}
+                  error={errors.email}
+                  showErrors={showErrors}
+                  placeholder="e.g., user@example.com"
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Birthday"
+                  type="date"
+                  value={birthday}
+                  onChange={setBirthday}
+                  error={errors.birthday}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
               </div>
 
               {/* Address */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <AutocompleteInput
-                  value={address}
-                  onChange={setAddress}
-                  setLocation={setGLoc}
-                  placeholder="Search your address"
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
+              <AutocompleteInput
+                label="Address"
+                value={address}
+                onChange={setAddress}
+                setLocation={setGLoc}
+                placeholder="Search your address"
+                error={errors.address}
+                showErrors={showErrors}
+                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+              />
 
               {/* Promo Code */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Promo Code
-                </label>
-                <input
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
+              <TextInput
+                label="Promo Code"
+                value={promoCode}
+                onChange={setPromoCode}
+                placeholder="Try WELCOME10"
+                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+              />
             </div>
 
             {/* Preferences */}
@@ -286,7 +259,9 @@ export default function RideShareSettings() {
                 Save
               </button>
               {saved && (
-                <span className="text-sm text-green-600 self-center">Saved!</span>
+                <span className="text-sm text-green-600 self-center">
+                  Saved!
+                </span>
               )}
             </div>
           </section>
@@ -294,11 +269,11 @@ export default function RideShareSettings() {
 
         {/* Footer */}
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
-          <div>© {new Date().getFullYear()} RideShare. Web-only localhost demo.</div>
+          <div>
+            © {new Date().getFullYear()} RideShare. Web-only localhost demo.
+          </div>
         </footer>
       </div>
     </ProtectedRoute>
   );
 }
-
-// fix the no file chosen part to be only until save, or if no photo there, and make the choose more like a button
