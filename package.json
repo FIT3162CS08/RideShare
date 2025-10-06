@@ -16,7 +16,10 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "jsonwebtoken": "^9.0.2",
-    "zod": "^4.1.11"
+    "zod": "^4.1.11",
+    "stripe": "^19.1.0",
+    "@stripe/stripe-js": "^8.0.0",
+    "@stripe/react-stripe-js": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
