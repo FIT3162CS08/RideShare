@@ -58,6 +58,10 @@ export default function TripByIdPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    console.log("showReviewModal changed:", showReviewModal);
+  }, [showReviewModal]);
+
   async function updateStatus(status: "picked_up" | "completed") {
     if (!trip) return;
     try {
@@ -210,6 +214,9 @@ export default function TripByIdPage() {
               {tripStatus === "completed" && (
                 <div className="text-center space-y-3">
                   <div className="text-lg font-semibold">Trip Summary</div>
+                  <div className="text-xs text-gray-500">
+                    Debug: tripStatus={tripStatus}, showReviewModal={showReviewModal.toString()}
+                  </div>
                   <div className="bg-gray-50 rounded-2xl p-4">
                     <div className="flex justify-between items-center">
                       <span>Fare</span>
@@ -217,7 +224,10 @@ export default function TripByIdPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => setShowReviewModal(true)}
+                    onClick={() => {
+                      console.log("Rate & Review button clicked");
+                      setShowReviewModal(true);
+                    }}
                     disabled={hasReviewed}
                     className={`w-full px-4 py-3 rounded-2xl transition-colors ${
                       hasReviewed 
