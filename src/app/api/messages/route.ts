@@ -1,25 +1,103 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { MessageModel } from "@/models/Message";
-import { z } from "zod";
+import { ConversationModel } from "@/models/Conversation";
+import { DMessageModel } from "@/models/DMessage";
+import mongoose from "mongoose";
 
 export async function GET(req: NextRequest) {
-  await connectToDatabase();
-  const tripId = req.nextUrl.searchParams.get("tripId");
-  if (!tripId) return NextResponse.json({ error: "tripId required" }, { status: 400 });
-  const list = await MessageModel.find({ tripId }).sort({ createdAt: 1 }).lean();
-  return NextResponse.json(list);
-}
+    await connectToDatabase();
+    try {
+        const { searchParams } = new URL(req.url);
+        const driverId = searchParams.get("driverId");
+        console.log("DRIVER ID: ", driverId, typeof driverId)
+        const userObjectId = new mongoose.Types.ObjectId(driverId);
 
-const MessageInput = z.object({ tripId: z.string(), sender: z.enum(["rider", "driver"]), text: z.string().min(1) });
+        if (!driverId) {
+            return NextResponse.json(
+                { error: "userId is required" },
+                { status: 400 }
+            );
+        }
+
+        const conversationsWithMessages = await ConversationModel.aggregate([
+            {
+                $match: {
+                    participants: { $in: [userObjectId] },
+                },
+            },
+            // Lookup users for participants
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "participants",
+                    foreignField: "_id",
+                    as: "participantDetails",
+                },
+            },
+            // Map only _id and name to participants
+            {
+                $addFields: {
+                    participants: {
+                        $map: {
+                            input: "$participantDetails",
+                            as: "p",
+                            in: { _id: "$$p._id", name: "$$p.name" },
+                        },
+                    },
+                },
+            },
+            // Remove temporary participantDetails field
+            { $unset: "participantDetails" },
+            // Join messages
+            {
+                $lookup: {
+                    from: "dmessages",
+                    localField: "_id",
+                    foreignField: "conversationId",
+                    as: "messages",
+                },
+            },
+            { $sort: { updatedAt: -1 } },
+        ]);
+
+        return NextResponse.json(conversationsWithMessages, { status: 200 });
+    } catch (err) {
+        console.error("❌ GET messages error:", err);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
+}
 
 export async function POST(req: NextRequest) {
-  await connectToDatabase();
-  const body = await req.json();
-  const parsed = MessageInput.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  const created = await MessageModel.create(parsed.data);
-  return NextResponse.json(created);
+    await connectToDatabase();
+    try {
+        const body = await req.json();
+        const { conversationId, senderId, receiverId, message } = body;
+
+        if (!conversationId || !senderId || !receiverId || !message) {
+            return NextResponse.json(
+                { error: "Missing required fields" },
+                { status: 400 }
+            );
+        }
+
+        const newMessage = await DMessageModel.create({
+            conversationId,
+            senderId,
+            receiverId,
+            message,
+        });
+
+        // update conversation's last message
+        await ConversationModel.findByIdAndUpdate(conversationId, {
+            lastMessage: message,
+            updatedAt: Date.now(),
+        });
+
+        console.log(newMessage);
+
+        return NextResponse.json(newMessage, { status: 201 });
+    } catch (err) {
+        console.error("❌ POST message error:", err);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
 }
-
-

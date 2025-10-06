@@ -25,11 +25,15 @@ export default function Message() {
         const fetchMessages = async () => {
             if (!user) return;
             try {
-                const res = await fetch(`/api/messages?driverId=${user.id}`);
+                // console.log(`/api/messages?driverId=${user.id}`, user)
+                const res = await fetch(`/api/messages?driverId=${user._id}`);
                 const conversations = await res.json();
+
+                console.log("CONVERSATION: ", conversations)
+                
                 setConversations(conversations);
             } catch (err) {
-                console.error("❌ Error fetching messages:", err);
+                console.log("❌ Error fetching messages:", err);
             }
         };
         fetchMessages();
@@ -103,6 +107,12 @@ export default function Message() {
         return;
     };
 
+    
+    if (conversations.error) {
+        console.log(conversations.error)
+        return <h1></h1>
+    }
+
     return (
         <div className="flex fixed h-64 w-1/2 right-5 bottom-5 border rounded-lg overflow-hidden shadow-md bg-white">
             {/* Sidebar */}
@@ -146,6 +156,11 @@ export default function Message() {
                 {/* Header */}
                 <div className="px-4 py-3 border-b bg-blue-600 text-white flex justify-between items-center">
                     <span className="font-semibold">
+                    {() => {console.log(conversations
+                                .filter((c) => c._id === activeChat)[0]
+                                .participants.filter(({ _id }) => {
+                                    return _id == user.id;
+                                })[0])}}
                         {activeChat &&
                             conversations
                                 .filter((c) => c._id === activeChat)[0]

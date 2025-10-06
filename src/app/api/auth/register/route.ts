@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  console.log("register")
   await connectToDatabase();
   const { email, password, name, phone, address, birthday } = await req.json();
 

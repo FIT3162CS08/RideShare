@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import Message from "@/component/message/Message"
 
 // Driver Portal — localhost demo
 export default function DriverPortalPage() {
@@ -36,6 +37,22 @@ export default function DriverPortalPage() {
   function completeTrip() {
     setCurrentTrip(null);
     alert("Trip completed. Earnings added. (demo)");
+  }
+
+  async function startConversation() {
+        // Make a conversation
+        await fetch(`/api/messages/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                passenger: '68e341296877a8123bb1f261',
+                driver: '68e3422e6877a8123bb1f265',
+                pickup: '35 plowman court, Epping',
+                dropoff: 'Monash Clayton',
+                date: '2004-03-10',
+            }), // current driver
+        });
+    // ['68e3422e6877a8123bb1f265', '68e341296877a8123bb1f261']
   }
 
   return (
@@ -212,9 +229,12 @@ export default function DriverPortalPage() {
           role="driver"
         />
 
+        <button onClick={() => startConversation()}>START CONVERSATION</button>
+
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
           © {new Date().getFullYear()} RideShare Driver. Localhost demo.
         </footer>
+        <Message />
       </div>
     </ProtectedRoute>
   );
