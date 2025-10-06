@@ -39,7 +39,12 @@ export default function TripByIdPage() {
     setError(null);
     fetch(`/api/trips/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
+        if (!res.ok) {
+          if (res.status === 400) {
+            throw new Error("Invalid trip ID format");
+          }
+          throw new Error(`Failed to fetch trip: ${res.status}`);
+        }
         return res.json();
       })
       .then((data: Trip) => {

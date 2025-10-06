@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { ReviewModel } from "@/models/Review";
 import { UserModel } from "@/models/User";
 import { z } from "zod";
+import mongoose from "mongoose";
 
 const ReviewInput = z.object({
   rating: z.number().min(1).max(5),
@@ -68,6 +69,21 @@ export async function POST(req: NextRequest) {
     }
     
     const data = parsed.data;
+    
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(data.driverId)) {
+      return NextResponse.json(
+        { error: "Invalid driver ID format" },
+        { status: 400 }
+      );
+    }
+    
+    if (!mongoose.Types.ObjectId.isValid(data.userId)) {
+      return NextResponse.json(
+        { error: "Invalid user ID format" },
+        { status: 400 }
+      );
+    }
     
     // Check if user has already reviewed this trip
     const existingReview = await ReviewModel.findOne({
