@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
-import ReviewDisplay from "@/component/ReviewDisplay";
+import DriverReviewsDisplay from "@/component/DriverReviewsDisplay";
 import RatingStars from "@/component/RatingStars";
 import { useParams } from "next/navigation";
 
@@ -131,7 +131,7 @@ export default function DriverProfilePage() {
 
             {/* Reviews Section */}
             <div className="lg:col-span-2">
-              <ReviewDisplay 
+              <DriverReviewsDisplay 
                 driverId={driver.id} 
                 showStats={true}
                 limit={20}

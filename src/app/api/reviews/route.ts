@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { ReviewModel } from "@/models/Review";
+import { UserModel } from "@/models/User";
 import { z } from "zod";
 
 const ReviewInput = z.object({
@@ -9,6 +10,7 @@ const ReviewInput = z.object({
   driverId: z.string().min(1),
   userId: z.string().min(1),
   tripId: z.string().min(1),
+  reviewerName: z.string().min(1).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -81,6 +83,24 @@ export async function POST(req: NextRequest) {
     }
     
     const review = await ReviewModel.create(data);
+    
+    // Add review to driver's reviews array
+    await UserModel.findByIdAndUpdate(
+      data.driverId,
+      {
+        $push: {
+          reviews: {
+            rating: data.rating,
+            comment: data.comment,
+            reviewerId: data.userId,
+            reviewerName: data.reviewerName || "Anonymous",
+            tripId: data.tripId,
+            createdAt: new Date(),
+          }
+        }
+      },
+      { new: true }
+    );
     
     return NextResponse.json({
       success: true,

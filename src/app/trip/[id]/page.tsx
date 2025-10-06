@@ -95,6 +95,7 @@ export default function TripByIdPage() {
           driverId: trip.driverId || "driver123", // Use actual driverId from trip
           userId: user._id,
           tripId: trip._id,
+          reviewerName: user.name || "Anonymous",
         }),
       });
       

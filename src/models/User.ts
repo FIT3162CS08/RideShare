@@ -1,5 +1,14 @@
 import mongoose, { Schema, Model, InferSchemaType } from "mongoose";
 
+const ReviewSchema = new Schema({
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true, maxlength: 500 },
+  reviewerId: { type: String, required: true },
+  reviewerName: { type: String, required: true },
+  tripId: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
 const UserSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -13,6 +22,7 @@ const UserSchema = new Schema(
     saveReceipts: { type: Boolean, required: true, default: false },
     card: { type: Boolean, required: true, default: true },
     bookings: [{ type: Schema.Types.ObjectId, ref: "Booking" }],
+    reviews: [ReviewSchema], // Array of reviews received as a driver
   },
   { timestamps: true }
 );
