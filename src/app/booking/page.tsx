@@ -6,9 +6,10 @@ import AutocompleteInput from "@/component/AutocompleteInput";
 import TextInput from "@/component/TextInput";
 import { validateDate, validatePhoneNumber, validateRequired, validateTime } from "@/util/ValidationHelpers";
 import { useUser } from "@/context/UserContext";
+import StripePayment from "@/component/StripePayment";
 
 export default function RideShareBooking() {
-  const { pickup: pickupContext, dropoff: dropoffContext } = useUser();
+  const { user, pickup: pickupContext, dropoff: dropoffContext } = useUser();
 
   const [pickup, setPickup] = useState(pickupContext ? pickupContext.formatted_address || "" : "");
   const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(pickupContext || null);
@@ -36,6 +37,17 @@ export default function RideShareBooking() {
 
   const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
   const [showErrors, setShowErrors] = useState(false);
+
+  // Stripe payment states
+  const [showPayment, setShowPayment] = useState(false);
+  const [tripId, setTripId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [showPaymentComplete, setShowPaymentComplete] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<{
+    amount: number;
+    tripId: string;
+    paymentId: string;
+  } | null>(null);
 
 
   useEffect(() => {
@@ -124,6 +136,8 @@ export default function RideShareBooking() {
     setShowErrors(true);
     if (!validateAll()) return;
     setSubmitting(true);
+    setPaymentError(null);
+    
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -141,24 +155,67 @@ export default function RideShareBooking() {
           notes,
           promo,
           payment,
+          userId: user?._id,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create booking");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(`Failed to create booking: ${errorData.error || res.statusText}`);
+      }
       const data = await res.json();
-      const tripId = data.tripId;
-      if (tripId) {
-        window.location.href = `/trip/${tripId}`;
+      const newTripId = data.tripId;
+      
+      if (newTripId) {
+        setTripId(newTripId);
+        if (payment === "card") {
+          // Show Stripe payment form
+          setShowPayment(true);
+        } else {
+          // Cash payment - redirect directly to trip
+          window.location.href = `/trip/${newTripId}`;
+        }
         return;
       }
+      
+      // Fallback: show local confirmation if no trip id returned
       const ref = String(data.bookingId || "").slice(-6).toUpperCase();
       setBookingRef(ref || null);
       setShowConfirm(true);
     } catch (err) {
-      console.error(err);
-      alert("Could not create booking. Please try again.");
+      console.error("Booking error:", err);
+      setPaymentError(err instanceof Error ? err.message : "Could not create booking. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handlePaymentSuccess(paymentId: string) {
+    if (tripId) {
+      setPaymentDetails({
+        amount: fare,
+        tripId,
+        paymentId,
+      });
+      setShowPayment(false);
+      setShowPaymentComplete(true);
+    }
+  }
+
+  function handlePaymentError(error: string) {
+    setPaymentError(error);
+    setShowPayment(false);
+  }
+
+  function handleViewTrip() {
+    if (paymentDetails) {
+      setShowPaymentComplete(false);
+      window.location.href = `/trip/${paymentDetails.tripId}`;
+    }
+  }
+
+  function handleBookAnother() {
+    setShowPaymentComplete(false);
+    resetForm();
   }
 
   function resetForm() {
@@ -176,6 +233,18 @@ export default function RideShareBooking() {
     setNotes("");
     setPromo("");
     setPayment("card");
+    setBookingRef(null);
+    setShowConfirm(false);
+    setErrors({});
+    setShowErrors(false);
+    setTripId(null);
+    setPaymentError(null);
+    setShowPayment(false);
+    setShowPaymentComplete(false);
+    setPaymentDetails(null);
+    if (directionsRendererRef.current) {
+      directionsRendererRef.current.setDirections({ routes: [], request: {} as any });
+    }
   }
 
   return (
@@ -501,6 +570,96 @@ export default function RideShareBooking() {
               <div className="mt-6 flex justify-end gap-2">
                 <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded-2xl border border-slate-300">Close</button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Complete Modal */}
+        {showPaymentComplete && paymentDetails && (
+          <div className="fixed inset-0 z-30 bg-black/40 grid place-items-center p-4">
+            <div className="max-w-lg w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Complete!</h2>
+              <p className="text-gray-600 mb-6">Your ride has been successfully booked and paid for.</p>
+              
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Amount Paid:</span>
+                    <span className="font-semibold">${paymentDetails.amount.toFixed(2)} AUD</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">From:</span>
+                    <span className="text-right max-w-48 truncate">{pickup}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">To:</span>
+                    <span className="text-right max-w-48 truncate">{dropoff}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payment ID:</span>
+                    <span className="font-mono text-xs">{paymentDetails.paymentId.slice(-8)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trip ID:</span>
+                    <span className="font-mono text-xs">{paymentDetails.tripId.slice(-8)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleViewTrip}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  View Your Trip
+                </button>
+                <button
+                  onClick={handleBookAnother}
+                  className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Book Another Ride
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPayment && tripId && (
+          <div className="fixed inset-0 z-20 bg-black/40 grid place-items-center p-4">
+            <div className="max-w-2xl w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold">Complete Payment</h3>
+                <button 
+                  onClick={() => setShowPayment(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {paymentError && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                  <p className="text-red-700">{paymentError}</p>
+                </div>
+              )}
+
+              <StripePayment
+                amount={fare}
+                tripId={tripId}
+                userId={user?._id || "user123"}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                description={`RideShare trip from ${pickup} to ${dropoff}`}
+              />
             </div>
           </div>
         )}

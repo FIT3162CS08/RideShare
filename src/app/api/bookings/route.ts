@@ -17,6 +17,7 @@ const BookingInput = z.object({
   notes: z.string().optional().default(""),
   promo: z.string().optional().default(""),
   payment: z.enum(["card", "cash"]).default("card"),
+  userId: z.string().optional(),
 });
 
 function estimateFareKm(km: number, rideType: "standard" | "xl" | "premium") {
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
   const booking = await BookingModel.create({
     ...data,
     fareEstimate: Math.round(fare * 100) / 100,
+    userId: data.userId,
   });
 
   // Create a Trip placeholder linked to this booking
