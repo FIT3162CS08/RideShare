@@ -4,9 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@/context/UserContext";
 import Loading from "@/component/Loading";
+import AutocompleteInput from "@/component/AutocompleteInput";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-  const { user, loading, logout } = useUser();
+  const { user, loading, logout, setPickupContext, setDropoffContext } = useUser();
+
+  const [pickup, setPickup] = useState("");
+  const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(null);
+  const [dropoff, setDropoff] = useState("");
+  const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+
+  const router = useRouter();
 
   if (loading) return Loading();
 
@@ -41,6 +53,24 @@ export default function HomePage() {
     );
   }
 
+  function validateLocations() {
+    const newErrors = {
+      pickup: !pickup ? null : (pickup == pickupLoc?.formatted_address ? null : "Please select an address from the dropdown"),
+      dropoff: !dropoff ? null : (dropoff == dropoffLoc?.formatted_address ? null : "Please select an address from the dropdown"),
+    };
+    setErrors(newErrors);
+    return Object.values(newErrors).every((e) => !e);
+  }
+
+  function onFindRides() {
+    setShowErrors(true);
+    if (!validateLocations()) return;
+    setPickupContext(pickupLoc);
+    setDropoffContext(dropoffLoc);
+    console.log("Finding rides from", pickup, "to", dropoff);
+    router.push("/booking");
+  }
+
   // Logged-in view (simple prototype)
   return (
     <section className="px-8 md:px-20 lg:px-40 py-12">
@@ -60,23 +90,26 @@ export default function HomePage() {
         {/* Quick request form */}
         <div className="space-y-3">
           <h2 className="text-xl font-semibold">Request a ride</h2>
-          <input
-            type="text"
+          <AutocompleteInput
             placeholder="Pick-up location"
+            value={pickup}
+            onChange={setPickup}
+            setLocation={setPickupLoc}
+            error={errors.pickup}
+            showErrors={showErrors}
             className="w-3/4 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
-          <input
-            type="text"
-            placeholder="Campus"
-            className="w-3/4 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
-          />
-          <input
-            type="text"
-            placeholder="Date & time"
+          <AutocompleteInput
+            placeholder="Destination"
+            value={dropoff}
+            onChange={setDropoff}
+            setLocation={setDropoffLoc}
+            error={errors.dropoff}
+            showErrors={showErrors}
             className="w-3/4 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
           <div>
-            <button className="text-base px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800">
+            <button className="text-base px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800" onClick={onFindRides}>
               Find rides
             </button>
           </div>

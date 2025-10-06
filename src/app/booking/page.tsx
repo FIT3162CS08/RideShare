@@ -1,16 +1,22 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import AutocompleteInput from "@/component/AutocompleteInput";
 import TextInput from "@/component/TextInput";
 import { validateDate, validatePhoneNumber, validateRequired, validateTime } from "@/util/ValidationHelpers";
+import { useUser } from "@/context/UserContext";
 
 export default function RideShareBooking() {
-  const [pickup, setPickup] = useState("");
-  const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(null);
-  const [dropoff, setDropoff] = useState("");
-  const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(null);
+  const { pickup: pickupContext, dropoff: dropoffContext } = useUser();
+
+  const [pickup, setPickup] = useState(pickupContext ? pickupContext.formatted_address || "" : "");
+  const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(pickupContext || null);
+  const [dropoff, setDropoff] = useState(dropoffContext ? dropoffContext.formatted_address || "" : "");
+  const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(dropoffContext || null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  
   const [whenNow, setWhenNow] = useState(true);
   const [date, setDate] = useState<string>(currentDate());
   const [time, setTime] = useState<string>(currentTime());
@@ -28,6 +34,49 @@ export default function RideShareBooking() {
 
   const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
   const [showErrors, setShowErrors] = useState(false);
+
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (mapRef.current && (window as any).google) {
+        clearInterval(interval);
+
+        const map = new google.maps.Map(mapRef.current, {
+          zoom: 12,
+          center: { lat: -37.8136, lng: 144.9631 },
+        });
+
+        directionsRendererRef.current = new google.maps.DirectionsRenderer();
+        directionsRendererRef.current.setMap(map);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+  useEffect(() => {
+    console.log(pickupLoc, dropoffLoc, directionsRendererRef.current);
+    if (!pickupLoc || !dropoffLoc || !directionsRendererRef.current) {
+      directionsRendererRef.current?.set("directions", null);
+      return;
+    }
+    const directionsService = new google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: pickupLoc.formatted_address!,
+        destination: dropoffLoc.formatted_address!,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          directionsRendererRef.current?.setDirections(result);
+        } else {
+          console.error("Directions request failed:", status);
+        }
+      }
+    );
+  }, [pickupLoc, dropoffLoc]);
 
   useEffect(() => {
     if (whenNow) {
@@ -408,7 +457,13 @@ export default function RideShareBooking() {
           </section>
 
           {/* Summary */}
-          <aside className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 md:p-6 h-fit">
+          <aside className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 md:p-6 h-fit flex flex-col gap-6">
+            
+            <div
+              ref={mapRef}
+              className="w-full h-64 rounded-2xl border border-slate-200"
+            />
+            
             <h2 className="text-lg font-semibold mb-3">Trip summary</h2>
             <ul className="text-sm space-y-2">
               <li><span className="text-slate-500">Pickup: </span><span className="font-medium">{pickup || "—"}</span></li>

@@ -10,6 +10,10 @@ type UserContextType = {
   loading: boolean;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
+  pickup: google.maps.places.PlaceResult | null;
+  dropoff: google.maps.places.PlaceResult | null;
+  setPickupContext: (place: google.maps.places.PlaceResult | null) => void;
+  setDropoffContext: (place: google.maps.places.PlaceResult | null) => void;
 };
 
 const UserContext = createContext<UserContextType>({
@@ -17,11 +21,18 @@ const UserContext = createContext<UserContextType>({
   loading: true,
   refreshUser: async () => {},
   logout: async () => {},
+  pickup: null,
+  dropoff: null,
+  setPickupContext: () => {},
+  setDropoffContext: () => {},
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserType>(null);
   const [loading, setLoading] = useState(true);
+
+  const [pickup, setPickupContext] = useState<google.maps.places.PlaceResult | null>(null);
+  const [dropoff, setDropoffContext] = useState<google.maps.places.PlaceResult | null>(null);
 
   const API_BASE = '/api'
     // process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -61,7 +72,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, refreshUser, logout }}>
+    <UserContext.Provider value={{ user, loading, refreshUser, logout, pickup, dropoff, setPickupContext, setDropoffContext }}>
       {children}
     </UserContext.Provider>
   );
