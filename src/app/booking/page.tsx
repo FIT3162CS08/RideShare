@@ -50,15 +50,21 @@ export default function RideShareBooking() {
 
         directionsRendererRef.current = new google.maps.DirectionsRenderer();
         directionsRendererRef.current.setMap(map);
+
+        updateMap();
       }
+
     }, 100);
 
     return () => clearInterval(interval);
   }, []);
 
-
   useEffect(() => {
     console.log(pickupLoc, dropoffLoc, directionsRendererRef.current);
+    updateMap();
+  }, [pickupLoc, dropoffLoc]);
+
+  const updateMap = () => {
     if (!pickupLoc || !dropoffLoc || !directionsRendererRef.current) {
       directionsRendererRef.current?.set("directions", null);
       return;
@@ -86,7 +92,7 @@ export default function RideShareBooking() {
         }
       }
     );
-  }, [pickupLoc, dropoffLoc]);
+  }
 
   useEffect(() => {
     if (whenNow) {
