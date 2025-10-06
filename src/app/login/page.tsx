@@ -78,22 +78,6 @@ export default function Login() {
             className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black/20"
-              />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <Link href="/forgot" className="text-sm text-blue-600 hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
               {error}
