@@ -6,10 +6,11 @@ import { signToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
-  const { email, password, name } = await req.json();
+  const { email, password, name, phone, address, birthday } = await req.json();
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
+  // Basic validation
+  if (!email || !password || !name || !phone || !address || !birthday) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   const existing = await UserModel.findOne({ email });
@@ -17,16 +18,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email already registered" }, { status: 400 });
   }
 
+  // Hash password
   const hashed = await bcrypt.hash(password, 10);
-  const user = await UserModel.create({ email, password: hashed, name });
 
+  // Create user with extra fields and hardcoded booleans
+  const user = await UserModel.create({
+    email,
+    password: hashed,
+    name,
+    phone,
+    address,
+    birthday,
+    pushNotifs: true,
+    saveReceipts: true,
+    card: true,
+    bookings: [],
+  });
 
-  const payload = { id: user._id.toString(), email: user.email, name: user.name };
+  // const payload = { id: user._id.toString(), email: user.email, name: user.name };
 
-  // create JWT
-  const token = signToken(payload);
+  // Create JWT token
+  const token = signToken({ id: user._id.toString() });
 
-  const res = NextResponse.json(payload);
+  const res = NextResponse.json({user});
   res.cookies.set("access_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -34,5 +48,6 @@ export async function POST(req: NextRequest) {
     path: "/",
     sameSite: "lax",
   });
+
   return res;
 }

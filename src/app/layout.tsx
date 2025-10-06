@@ -1,7 +1,7 @@
 import {Geist, Geist_Mono, Roboto} from "next/font/google";
 import "./globals.css";
 
-import Navigation from "@/component/navigation/Navigation";
+import Navigation from "@/component/Navigation";
 import COLOUR from "@/util/COLOUR";
 import Script from "next/script";
 import BlueBlobBackground from "@/util/BlueBlobBackground";

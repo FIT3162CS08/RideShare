@@ -2,92 +2,107 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import AutocompleteInput from "@/component/AutocompleteInput";
+import TextInput from "@/component/TextInput";
+import {
+  validateRequired,
+  validatePhoneNumber,
+  validateEmail,
+  combineValidators,
+  validateLettersOnly,
+  validateBirthday,
+} from "@/util/ValidationHelpers";
+import { useUser } from "@/context/UserContext";
 
 export default function RideShareSettings() {
-  const defaultProfile = {
-    savedName: "John Doe",
-    savedPhone: "0412 345 678",
-    email: "johndoe@example.com",
-    birthday: "1990-01-01",
-    promoCode: "WELCOME10",
-    profilePic: null as string | null,
-    address: "123 Main St, Melbourne VIC",
-    notifications: true,
-    saveReceipts: true,
-    defaultPayment: "card" as "card" | "cash",
-  };
+  const {user, refreshUser} = useUser();
+  const userData = user!
+  console.log(userData)
+  if (!user) return;
 
-  const [savedName, setSavedName] = useState(defaultProfile.savedName);
-  const [savedPhone, setSavedPhone] = useState(defaultProfile.savedPhone);
-  const [email, setEmail] = useState(defaultProfile.email);
-  const [birthday, setBirthday] = useState(defaultProfile.birthday);
-  const [promoCode, setPromoCode] = useState(defaultProfile.promoCode);
-  const [profilePic, setProfilePic] = useState<string | null>(
-    defaultProfile.profilePic
-  );
-  const [address, setAddress] = useState(defaultProfile.address);
+  const [name, setSavedName] = useState(userData.name);
+  const [phone, setPhone] = useState(userData.phone);
+  const [email, setEmail] = useState(userData.email);
+  const [birthday, setBirthday] = useState(userData.birthday);
+  const [promoCode, setPromoCode] = useState("");
+  const [address, setAddress] = useState(userData.address);
+  const [googleLoc, setGLoc] = useState<google.maps.places.PlaceResult | null>(null);
 
   const [notifications, setNotifications] = useState(
-    defaultProfile.notifications
+    userData.pushNotifs
   );
   const [saveReceipts, setSaveReceipts] = useState(
-    defaultProfile.saveReceipts
+    userData.saveReceipts
   );
   const [defaultPayment, setDefaultPayment] = useState<"card" | "cash">(
-    defaultProfile.defaultPayment
+    userData.card ? "card" : "cash"
   );
 
   const [saved, setSaved] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
 
-  const autocompleteRef = useRef<HTMLInputElement>(null);
-  const autocompleteObj = useRef<google.maps.places.Autocomplete | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  function validateAll() {
+    const newErrors = {
+      savedName: combineValidators(validateRequired("Name"), validateLettersOnly)(name),
+      savedPhone: validatePhoneNumber(phone),
+      email: validateEmail(email),
+      birthday: validateBirthday(birthday),
+      address: validateRequired("Address")(address) || (address == googleLoc?.formatted_address ? null : "Please select an address from the dropdown"),
+    };
+    setErrors(newErrors);
+    return Object.values(newErrors).every((e) => !e);
+  }
+
+  async function handleReset() {
+    await refreshUser();
+    setSaved(false);
+    setErrors({});
+    setShowErrors(false);
+  }
 
   useEffect(() => {
-    if (autocompleteRef.current && !autocompleteObj.current) {
-      autocompleteObj.current = new google.maps.places.Autocomplete(
-        autocompleteRef.current,
-        {
-          types: ["address"],
-          componentRestrictions: { country: "au" },
-        }
-      );
-      autocompleteObj.current.addListener("place_changed", () => {
-        const place = autocompleteObj.current?.getPlace();
-        if (place?.formatted_address) {
-          setAddress(place.formatted_address);
-        }
+    if (userData) {
+      setSavedName(userData.name);
+      setPhone(userData.phone);
+      setEmail(userData.email);
+      setBirthday(userData.birthday);
+      setAddress(userData.address);
+      setNotifications(userData.pushNotifs);
+      setSaveReceipts(userData.saveReceipts);
+      setDefaultPayment(userData.card ? "card" : "cash");
+    }
+  }, [userData]);
+
+  async function handleSave() {
+    setShowErrors(true);
+    if (!validateAll()) return;
+
+    try {
+      const res = await fetch("/api/auth/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          email,
+          birthday,
+          address,
+          pushNotifs: notifications,
+          saveReceipts,
+          card: defaultPayment,
+        }),
       });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update");
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message);
     }
-  }, []);
-
-  function handleProfilePicChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setProfilePic(ev.target?.result as string);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  }
-
-  function handleReset() {
-    setSavedName(defaultProfile.savedName);
-    setSavedPhone(defaultProfile.savedPhone);
-    setEmail(defaultProfile.email);
-    setBirthday(defaultProfile.birthday);
-    setPromoCode(defaultProfile.promoCode);
-    setProfilePic(defaultProfile.profilePic);
-    setAddress(defaultProfile.address);
-    setNotifications(defaultProfile.notifications);
-    setSaveReceipts(defaultProfile.saveReceipts);
-    setDefaultPayment(defaultProfile.defaultPayment);
-    setSaved(false);
-  }
-
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   }
 
   return (
@@ -102,7 +117,9 @@ export default function RideShareSettings() {
               </div>
               <span className="font-semibold tracking-tight">RideShare</span>
             </div>
-            <div className="text-sm text-slate-600">Settings (localhost demo)</div>
+            <div className="text-sm text-slate-600">
+              Settings (localhost demo)
+            </div>
           </div>
         </header>
 
@@ -115,100 +132,63 @@ export default function RideShareSettings() {
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Profile</h2>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input
-                    value={savedName}
-                    onChange={(e) => setSavedName(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input
-                    value={savedPhone}
-                    onChange={(e) => setSavedPhone(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Birthday</label>
-                  <input
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              {/* Profile Picture */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Profile Picture
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-full border border-slate-300 overflow-hidden">
-                    {profilePic ? (
-                      <img
-                        src={profilePic}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center bg-slate-100 text-slate-400">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-2xl border border-slate-300 hover:bg-slate-50 text-sm"
-                  >
-                    Choose Photo
-                  </button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePicChange}
-                    ref={fileInputRef}
-                    className="hidden"
-                  />
-                </div>
+                <TextInput
+                  label="Name"
+                  value={name}
+                  onChange={setSavedName}
+                  error={errors.savedName}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Phone"
+                  value={phone}
+                  onChange={setPhone}
+                  error={errors.savedPhone}
+                  showErrors={showErrors}
+                  placeholder="e.g., 04xx xxx xxx"
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Email"
+                  value={email}
+                  onChange={setEmail}
+                  error={errors.email}
+                  showErrors={showErrors}
+                  placeholder="e.g., user@example.com"
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
+                <TextInput
+                  label="Birthday"
+                  type="date"
+                  value={birthday}
+                  onChange={setBirthday}
+                  error={errors.birthday}
+                  showErrors={showErrors}
+                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+                />
               </div>
 
               {/* Address */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <input
-                  ref={autocompleteRef}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Search your address"
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
+              <AutocompleteInput
+                label="Address"
+                value={address}
+                onChange={setAddress}
+                setLocation={setGLoc}
+                placeholder="Search your address"
+                error={errors.address}
+                showErrors={showErrors}
+                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+              />
 
               {/* Promo Code */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Promo Code
-                </label>
-                <input
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-3 py-2"
-                />
-              </div>
+              <TextInput
+                label="Promo Code"
+                value={promoCode}
+                onChange={setPromoCode}
+                placeholder="Try WELCOME10"
+                className="w-full rounded-2xl border border-slate-300 px-3 py-2"
+              />
             </div>
 
             {/* Preferences */}
@@ -302,7 +282,9 @@ export default function RideShareSettings() {
                 Save
               </button>
               {saved && (
-                <span className="text-sm text-green-600 self-center">Saved!</span>
+                <span className="text-sm text-green-600 self-center">
+                  Saved!
+                </span>
               )}
             </div>
           </section>
@@ -310,11 +292,11 @@ export default function RideShareSettings() {
 
         {/* Footer */}
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
-          <div>© {new Date().getFullYear()} RideShare. Web-only localhost demo.</div>
+          <div>
+            © {new Date().getFullYear()} RideShare. Web-only localhost demo.
+          </div>
         </footer>
       </div>
     </ProtectedRoute>
   );
 }
-
-// fix the no file chosen part to be only until save, or if no photo there, and make the choose more like a button
