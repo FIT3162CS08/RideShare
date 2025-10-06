@@ -96,12 +96,15 @@ export default function Message() {
     const sendMessage = async () => {
         if (!newMessage.trim()) return;
         if (!reciever || !user) return;
+
+        console.log("SEND MESSAGE")
         socket.emit("message", {
             conversationId: activeChat,
             senderId: user.id,
             receiverId: reciever,
             newMessage,
         });
+        console.log("SEND MESSAGE")
         setNewMessage("");
 
         return;
@@ -156,17 +159,14 @@ export default function Message() {
                 {/* Header */}
                 <div className="px-4 py-3 border-b bg-blue-600 text-white flex justify-between items-center">
                     <span className="font-semibold">
-                    {() => {console.log(conversations
-                                .filter((c) => c._id === activeChat)[0]
-                                .participants.filter(({ _id }) => {
-                                    return _id == user.id;
-                                })[0])}}
-                        {activeChat &&
-                            conversations
-                                .filter((c) => c._id === activeChat)[0]
-                                .participants.filter(({ _id }) => {
-                                    return _id == user.id;
-                                })[0].name}
+                        {
+                            // activeChat &&
+                            // conversations
+                            //     .filter((c) => c._id === activeChat)[0]
+                            //     .participants.filter(({ _id }) => {
+                            //         return _id == user.id;
+                            //     })[0].name
+                        }
                     </span>
                     <span className="text-sm text-blue-100">Online</span>
                 </div>

@@ -23,9 +23,11 @@ app.prepare().then(() => {
         socket.on("message", async (data) => {
             connectToDatabase();
             try {
+                console.log("MESSAGE")
                 const { conversationId, senderId, receiverId, newMessage } =
                     data;
 
+                    console.log("DATA: ", data)
                 if (
                     !conversationId ||
                     !senderId ||
