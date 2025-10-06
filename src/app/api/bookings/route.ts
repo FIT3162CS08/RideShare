@@ -48,11 +48,41 @@ export async function POST(req: NextRequest) {
       fare: Math.round(data.fare * 100) / 100,
     });
 
-    // return full booking document (as plain JSON)
+    // Find or create a default driver
+    let driver = await UserModel.findOne({ role: "driver" });
+    if (!driver) {
+      driver = await UserModel.create({
+        name: "John D.",
+        email: "john.driver@rideshare.com",
+        phone: "0412345678",
+        password: "password123",
+        role: "driver",
+        address: "123 Driver St, Melbourne VIC 3000",
+        birthday: "1990-01-01",
+      });
+    }
+
+    const rider = data.userId ? await UserModel.findById(data.userId) : null;
+
+    const trip = await TripModel.create({
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      fare: booking.fare,
+      riderId: data.userId || "unknown",
+      driverId: driver._id.toString(),
+      riderName: rider?.name || "Rider",
+      driverName: driver.name,
+    });
+
+    booking.tripId = trip._id;
+    await booking.save();
+
+    // return full booking document with tripId
     return NextResponse.json({
       ...booking.toObject(),
       open: true,
       bookingId: booking._id,
+      tripId: trip._id,
     });
   } catch (error) {
     console.error("Error creating booking:", error);
