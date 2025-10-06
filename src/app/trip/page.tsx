@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
+import ReviewModal from "@/component/ReviewModal";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import { useUser } from "@/context/UserContext";
 
 type Booking = {
   _id: string;
@@ -45,12 +47,31 @@ const tripp = {
   };
 
 export default function TripPage() {
+  const { user } = useUser();
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+
+  // Review submission handler
+  async function handleReviewSubmit(rating: number, comment: string) {
+    if (!user) return;
+    
+    setReviewLoading(true);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      setHasReviewed(true);
+      setShowReviewModal(false);
+      setReviewLoading(false);
+      alert("Review Submitted! Thank you for your feedback.");
+    }, 1000);
+  }
 
   // Fetch the user's open booking
   useEffect(() => {
@@ -330,8 +351,16 @@ export default function TripPage() {
                       <span className="text-xl font-bold">${trip.fare.toFixed(2)}</span>
                     </div>
                   </div>
-                  <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors">
-                    Rate & Review Driver
+                  <button 
+                    onClick={() => setShowReviewModal(true)}
+                    disabled={hasReviewed}
+                    className={`w-full px-4 py-3 rounded-2xl transition-colors ${
+                      hasReviewed 
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {hasReviewed ? 'Review Submitted ✓' : 'Rate & Review Driver'}
                   </button>
                 </div>
               )}
@@ -363,8 +392,21 @@ export default function TripPage() {
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           riderName="You"
-          driverName={trip.driver}
+          driverName="Driver"
           role="rider"
+        />
+
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          onSubmit={handleReviewSubmit}
+          driverName="Driver"
+          tripDetails={{
+            pickup: trip.pickup,
+            dropoff: trip.dropoff,
+            fare: trip.fare,
+          }}
+          loading={reviewLoading}
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
