@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import Chat from "@/component/Chat";
+import ReviewModal from "@/component/ReviewModal";
 import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import { useUser } from "@/context/UserContext";
 
 type Trip = {
   _id: string;
@@ -16,11 +18,15 @@ type Trip = {
 export default function TripByIdPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useUser();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -67,6 +73,39 @@ export default function TripByIdPage() {
     } catch (e) {
       console.error(e);
       alert("Could not update trip status");
+    }
+  }
+
+  async function handleReviewSubmit(rating: number, comment: string) {
+    if (!trip || !user) return;
+    
+    setReviewLoading(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          comment,
+          driverId: "driver123", // This should come from trip data
+          userId: user._id,
+          tripId: trip._id,
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to submit review");
+      }
+      
+      setHasReviewed(true);
+      setShowReviewModal(false);
+      alert("Thank you for your review!");
+    } catch (error) {
+      console.error("Review submission error:", error);
+      alert(error instanceof Error ? error.message : "Failed to submit review");
+    } finally {
+      setReviewLoading(false);
     }
   }
 
@@ -177,8 +216,16 @@ export default function TripByIdPage() {
                       <span className="text-xl font-bold">${trip.fare.toFixed(2)}</span>
                     </div>
                   </div>
-                  <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors">
-                    Rate & Review Driver
+                  <button 
+                    onClick={() => setShowReviewModal(true)}
+                    disabled={hasReviewed}
+                    className={`w-full px-4 py-3 rounded-2xl transition-colors ${
+                      hasReviewed 
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {hasReviewed ? "Review Submitted ✓" : "Rate & Review Driver"}
                   </button>
                 </div>
               )}
@@ -201,6 +248,19 @@ export default function TripByIdPage() {
         </main>
 
         <Chat isOpen={showChat} onClose={() => setShowChat(false)} riderName="You" driverName="Your Driver" role="rider" />
+
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          onSubmit={handleReviewSubmit}
+          driverName="John D."
+          tripDetails={{
+            pickup: trip.pickup,
+            dropoff: trip.dropoff,
+            fare: trip.fare,
+          }}
+          loading={reviewLoading}
+        />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
           © {new Date().getFullYear()} RideShare. Mongo-backed demo.

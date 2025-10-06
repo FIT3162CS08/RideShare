@@ -1,91 +1,150 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import ReviewDisplay from "@/component/ReviewDisplay";
+import RatingStars from "@/component/RatingStars";
+import { useParams } from "next/navigation";
 
-// Driver Portal — localhost demo
-export default function DriverPortalPage() {
-  const [online, setOnline] = useState(false);
-  const [currentTrip, setCurrentTrip] = useState<null | {
-    rider: string;
-    pickup: string;
-    dropoff: string;
-    fare: number;
-  }>(null);
+// Driver Profile Page
+export default function DriverProfilePage() {
+  const { id } = useParams();
+  const [driver, setDriver] = useState<{
+    id: string;
+    name: string;
+    vehicle: string;
+    rating: number;
+    totalTrips: number;
+    joinedDate: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  function goOnline() {
-    setOnline(true);
+  useEffect(() => {
+    // Simulate fetching driver data
+    setLoading(true);
+    setTimeout(() => {
+      setDriver({
+        id: id as string,
+        name: "John D.",
+        vehicle: "Blue Toyota Camry - ABC123",
+        rating: 4.8,
+        totalTrips: 1247,
+        joinedDate: "2022-03-15",
+      });
+      setLoading(false);
+    }, 1000);
+  }, [id]);
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading driver profile...</p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
   }
-  function acceptTrip() {
-    setCurrentTrip({
-      rider: "Mahdee I.",
-      pickup: "26 Sir John Monash Dr, Caulfield",
-      dropoff: "14 Innovation Walk, Clayton",
-      fare: 23.75,
-    });
-  }
-  function completeTrip() {
-    setCurrentTrip(null);
-    alert("Trip completed. Earnings added. (demo)");
+
+  if (error || !driver) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Driver Not Found</h1>
+            <p className="text-gray-600 mb-4">The driver you're looking for doesn't exist.</p>
+            <button 
+              onClick={() => window.history.back()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">RS</div>
-            <span className="font-semibold tracking-tight">Driver Portal</span>
+        <header className="bg-white shadow-sm">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-600">
+                  {driver.name.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{driver.name}</h1>
+                <p className="text-gray-600">{driver.vehicle}</p>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Main */}
-        <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-          {!online && !currentTrip && (
-            <div className="bg-white rounded-3xl border p-6 text-center">
-              <h1 className="text-2xl font-semibold mb-4">You are offline</h1>
-              <button onClick={goOnline} className="px-6 py-3 rounded-2xl bg-green-600 text-white text-lg">
-                Go Online
-              </button>
-            </div>
-          )}
-
-          {online && !currentTrip && (
-            <div className="bg-white rounded-3xl border p-6 text-center space-y-4">
-              <h2 className="text-xl font-semibold">You are online</h2>
-              <p className="text-slate-600">Waiting for nearby ride requests…</p>
-              <button onClick={acceptTrip} className="px-5 py-3 rounded-2xl bg-slate-900 text-white">
-                Simulate Incoming Trip
-              </button>
-            </div>
-          )}
-
-          {currentTrip && (
-            <div className="bg-white rounded-3xl border p-6 space-y-4">
-              <h2 className="text-xl font-semibold">Current Trip</h2>
-              <div className="space-y-2 text-sm">
-                <div><span className="text-slate-500">Rider: </span>{currentTrip.rider}</div>
-                <div><span className="text-slate-500">Pickup: </span>{currentTrip.pickup}</div>
-                <div><span className="text-slate-500">Dropoff: </span>{currentTrip.dropoff}</div>
-                <div><span className="text-slate-500">Fare: </span>${currentTrip.fare.toFixed(2)} AUD</div>
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Driver Info */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-4">Driver Information</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Rating</span>
+                    <div className="flex items-center gap-2">
+                      <RatingStars rating={driver.rating} size="sm" showNumber={true} />
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Trips</span>
+                    <span className="font-medium">{driver.totalTrips.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Joined</span>
+                    <span className="font-medium">
+                      {new Date(driver.joinedDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-3">
-                <button onClick={completeTrip} className="px-4 py-2 rounded-2xl bg-green-600 text-white">
-                  Complete Trip
-                </button>
-                <button onClick={() => setCurrentTrip(null)} className="px-4 py-2 rounded-2xl border">
-                  Cancel
-                </button>
+
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-4">Vehicle Details</h2>
+                <div className="space-y-2">
+                  <p className="text-gray-700">{driver.vehicle}</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Verified Driver</span>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Reviews Section */}
+            <div className="lg:col-span-2">
+              <ReviewDisplay 
+                driverId={driver.id} 
+                showStats={true}
+                limit={20}
+              />
+            </div>
+          </div>
         </main>
 
-        <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
-          © {new Date().getFullYear()} RideShare Driver. Localhost demo.
+        {/* Footer */}
+        <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} RideShare. Driver Profile.
         </footer>
       </div>
-    </ProtectedRoute>  
+    </ProtectedRoute>
   );
 }
