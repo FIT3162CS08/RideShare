@@ -14,9 +14,9 @@ const BookingSchema = new Schema(
     notes: { type: String },
     promo: { type: String },
     payment: { type: String, enum: ["card", "cash"], default: "card" },
-    fareEstimate: { type: Number, required: true },
+    fare: { type: Number, required: true },
     status: { type: String, enum: ["requested", "accepted", "completed", "cancelled"], default: "requested" },
-    tripId: { type: Schema.Types.ObjectId, ref: "Trip" },
+    open: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

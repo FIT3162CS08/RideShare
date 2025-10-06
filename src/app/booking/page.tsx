@@ -137,6 +137,8 @@ export default function RideShareBooking() {
         body: JSON.stringify({
           pickup,
           dropoff,
+          distanceKm,
+          fare,
           whenNow,
           date,
           time,
@@ -151,9 +153,8 @@ export default function RideShareBooking() {
       });
       if (!res.ok) throw new Error("Failed to create booking");
       const data = await res.json();
-      const tripId = data.tripId;
-      if (tripId) {
-        window.location.href = `/trip/${tripId}`;
+      if (data) {
+        window.location.href = `/trip`;
         return;
       }
       const ref = String(data.bookingId || "").slice(-6).toUpperCase();
