@@ -84,6 +84,11 @@ export default function TripByIdPage() {
   async function handleReviewSubmit(rating: number, comment: string) {
     if (!trip || !user) return;
     
+    if (!trip.driverId) {
+      alert("Driver information not available. Cannot submit review.");
+      return;
+    }
+    
     setReviewLoading(true);
     try {
       const res = await fetch("/api/reviews", {
@@ -92,7 +97,7 @@ export default function TripByIdPage() {
         body: JSON.stringify({
           rating,
           comment,
-          driverId: trip.driverId || "driver123", // Use actual driverId from trip
+          driverId: trip.driverId, // Use actual driverId from trip
           userId: user._id,
           tripId: trip._id,
           reviewerName: user.name || "Anonymous",

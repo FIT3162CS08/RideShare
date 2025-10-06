@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     const review = await ReviewModel.create(data);
     
     // Add review to driver's reviews array
-    await UserModel.findByIdAndUpdate(
+    const driverUpdate = await UserModel.findByIdAndUpdate(
       data.driverId,
       {
         $push: {
@@ -101,6 +101,10 @@ export async function POST(req: NextRequest) {
       },
       { new: true }
     );
+
+    if (!driverUpdate) {
+      console.warn(`Driver with ID ${data.driverId} not found. Review created but not added to driver's array.`);
+    }
     
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { BookingModel } from "@/models/Booking";
 import { TripModel } from "@/models/Trip";
+import { UserModel } from "@/models/User";
 import { z } from "zod";
 
 const BookingInput = z.object({
@@ -61,15 +62,33 @@ export async function POST(req: NextRequest) {
     userId: data.userId,
   });
 
+  // Find or create a default driver
+  let driver = await UserModel.findOne({ role: "driver" });
+  if (!driver) {
+    // Create a default driver if none exists
+    driver = await UserModel.create({
+      name: "John D.",
+      email: "john.driver@rideshare.com",
+      phone: "0412345678",
+      password: "password123", // In real app, this would be hashed
+      role: "driver",
+      address: "123 Driver St, Melbourne VIC 3000",
+      birthday: "1990-01-01",
+    });
+  }
+
+  // Get rider information
+  const rider = data.userId ? await UserModel.findById(data.userId) : null;
+
   // Create a Trip placeholder linked to this booking
   const trip = await TripModel.create({
     pickup: booking.pickup,
     dropoff: booking.dropoff,
     fare: booking.fareEstimate,
-    riderId: data.userId || "rider123",
-    driverId: "driver123", // Default driver for demo - in real app this would be assigned
-    riderName: "Rider", // This should come from user data
-    driverName: "John D.", // This should come from driver data
+    riderId: data.userId || "unknown",
+    driverId: driver._id.toString(),
+    riderName: rider?.name || "Rider",
+    driverName: driver.name,
   });
   booking.tripId = trip._id;
   await booking.save();
