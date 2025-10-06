@@ -71,6 +71,7 @@ app.prepare().then(() => {
 
         // Join rooms based on userId (so you can emit only to that user)
         socket.on("join", (userId) => {
+            console.log("userId DEBUG: ", userId)
             socket.join(userId);
             console.log(`User ${userId} joined room ${userId}`);
         });

@@ -29,8 +29,6 @@ export default function Message() {
                 const res = await fetch(`/api/messages?driverId=${user._id}`);
                 const conversations = await res.json();
 
-                console.log("CONVERSATION: ", conversations)
-                
                 setConversations(conversations);
             } catch (err) {
                 console.log("❌ Error fetching messages:", err);
@@ -41,10 +39,12 @@ export default function Message() {
         // Listen for new messages
         socket.on("newMessage", ({ msg, conversationId }) => {
             setSocketData({ msg, conversationId });
+            console.log("SOCKET DATA: ", msg, conversationId)
+
         });
 
         if (user) {
-            socket.emit("join", user.id);
+            socket.emit("join", user._id);
         }
 
         return () => {
@@ -97,14 +97,12 @@ export default function Message() {
         if (!newMessage.trim()) return;
         if (!reciever || !user) return;
 
-        console.log("SEND MESSAGE")
         socket.emit("message", {
             conversationId: activeChat,
-            senderId: user.id,
+            senderId: user._id,
             receiverId: reciever,
             newMessage,
         });
-        console.log("SEND MESSAGE")
         setNewMessage("");
 
         return;
@@ -115,6 +113,8 @@ export default function Message() {
         console.log(conversations.error)
         return <h1></h1>
     }
+
+    console.log("CONVERSATION : ", conversations)
 
     return (
         <div className="flex fixed h-64 w-1/2 right-5 bottom-5 border rounded-lg overflow-hidden shadow-md bg-white">
@@ -177,14 +177,14 @@ export default function Message() {
                         <div
                             key={idx}
                             className={`flex ${
-                                msg.senderId === user.id
+                                msg.senderId === user._id
                                     ? "justify-end"
                                     : "justify-start"
                             }`}
                         >
                             <div
                                 className={`px-3 py-2 rounded-lg max-w-[70%] ${
-                                    msg.senderId === user.id
+                                    msg.senderId === user._id
                                         ? "bg-blue-600 text-white"
                                         : "bg-gray-200 text-gray-800"
                                 }`}
