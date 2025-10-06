@@ -211,6 +211,14 @@ export default function TripByIdPage() {
                   Complete Trip
                 </button>
               )}
+              {tripStatus !== "completed" && (
+                <button 
+                  onClick={() => setTripStatus("completed")} 
+                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-2xl hover:bg-orange-700 transition-colors mb-2"
+                >
+                  Force Complete Trip (Debug)
+                </button>
+              )}
               {tripStatus === "completed" && (
                 <div className="text-center space-y-3">
                   <div className="text-lg font-semibold">Trip Summary</div>
@@ -236,6 +244,15 @@ export default function TripByIdPage() {
                     }`}
                   >
                     {hasReviewed ? "Review Submitted ✓" : "Rate & Review Driver"}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      console.log("Test Review Modal button clicked");
+                      setShowReviewModal(true);
+                    }}
+                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 transition-colors mt-2"
+                  >
+                    Test Review Modal (Debug)
                   </button>
                 </div>
               )}
