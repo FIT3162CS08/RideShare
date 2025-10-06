@@ -16,7 +16,9 @@ export default function RideShareBooking() {
   const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(dropoffContext || null);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
-  
+  const [distanceKm, setDistanceKm] = useState(0)
+  const [durationMin, setDurationMin] = useState(0)
+
   const [whenNow, setWhenNow] = useState(true);
   const [date, setDate] = useState<string>(currentDate());
   const [time, setTime] = useState<string>(currentTime());
@@ -71,6 +73,14 @@ export default function RideShareBooking() {
       (result, status) => {
         if (status === "OK" && result) {
           directionsRendererRef.current?.setDirections(result);
+
+          const leg = result.routes[0].legs[0];
+          const distanceMeters = leg.distance?.value ?? 0; // meters
+          const durationSeconds = leg.duration?.value ?? 0; // seconds
+
+          // Convert to km and minutes
+          setDistanceKm(Number((distanceMeters / 1000).toFixed(1)));
+          setDurationMin(Math.ceil(durationSeconds / 60));
         } else {
           console.error("Directions request failed:", status);
         }
@@ -96,14 +106,6 @@ export default function RideShareBooking() {
     setErrors(newErrors);
     return Object.values(newErrors).every((e) => !e);
   };
-
-  const distanceKm = useMemo(() => {
-    if (!pickup || !dropoff) return 0;
-    const s = Math.abs(pickup.length - dropoff.length) + Math.min(pickup.length, dropoff.length) * 0.1;
-    return Math.max(2, Math.min(18, Math.round(s)));
-  }, [pickup, dropoff]);
-
-  const etaMin = useMemo(() => (whenNow ? Math.max(3, Math.min(12, 2 + (distanceKm % 9))) : 0), [whenNow, distanceKm]);
 
   const fare = useMemo(() => {
     const base = rideType === "premium" ? 7.5 : rideType === "xl" ? 5.5 : 4.0;
@@ -421,7 +423,7 @@ export default function RideShareBooking() {
 
                 {whenNow ? (
                   <div className="mt-3 text-center text-sm text-blue-600">
-                    🚗 Driver ETA: ~{etaMin} minutes
+                    🚗 Driver ETA: ~{durationMin} minutes
                   </div>
                 ) : (
                   <div className="mt-3 text-center text-sm text-blue-600">
@@ -469,7 +471,7 @@ export default function RideShareBooking() {
               <li><span className="text-slate-500">Pickup: </span><span className="font-medium">{pickup || "—"}</span></li>
               <li><span className="text-slate-500">Dropoff: </span><span className="font-medium">{dropoff || "—"}</span></li>
               <li><span className="text-slate-500">Distance: </span><span className="font-medium">{distanceKm ? `${distanceKm} km (demo)` : "—"}</span></li>
-              <li><span className="text-slate-500">When: </span><span className="font-medium">{whenNow ? `Now (ETA ~${etaMin} min)` : `${date} ${time}`}</span></li>
+              <li><span className="text-slate-500">When: </span><span className="font-medium">{whenNow ? `Now (ETA ~${durationMin} min)` : `${date} ${time}`}</span></li>
               <li><span className="text-slate-500">Ride type: </span><span className="font-medium capitalize">{rideType}</span></li>
               <li><span className="text-slate-500">Passengers: </span><span className="font-medium">{passengers}</span></li>
               <li><span className="text-slate-500">Luggage: </span><span className="font-medium">{luggage}</span></li>
@@ -493,7 +495,7 @@ export default function RideShareBooking() {
                 )}
                 <div><span className="text-slate-500">Pickup: </span>{pickup}</div>
                 <div><span className="text-slate-500">Dropoff: </span>{dropoff}</div>
-                <div><span className="text-slate-500">When: </span>{whenNow ? `Now (ETA ~${etaMin} min)` : `${date} ${time}`}</div>
+                <div><span className="text-slate-500">When: </span>{whenNow ? `Now (ETA ~${durationMin} min)` : `${date} ${time}`}</div>
                 <div><span className="text-slate-500">Fare est.: </span>${fare.toFixed(2)} AUD</div>
               </div>
               <div className="mt-6 flex justify-end gap-2">
