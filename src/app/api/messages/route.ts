@@ -1,25 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { MessageModel } from "@/models/Message";
-import { z } from "zod";
+import { ConversationModel } from "@/models/Conversation";
+import { DMessageModel } from "@/models/DMessage";
 
 export async function GET(req: NextRequest) {
-  await connectToDatabase();
-  const tripId = req.nextUrl.searchParams.get("tripId");
-  if (!tripId) return NextResponse.json({ error: "tripId required" }, { status: 400 });
-  const list = await MessageModel.find({ tripId }).sort({ createdAt: 1 }).lean();
-  return NextResponse.json(list);
-}
+    await connectToDatabase();
+    try {
+        const { searchParams } = new URL(req.url);
+        const conversationId = searchParams.get("conversationId");
+        if (!conversationId) {
+            return NextResponse.json(
+                { error: "conversationId is required" },
+                { status: 400 }
+            );
+        }
 
-const MessageInput = z.object({ tripId: z.string(), sender: z.enum(["rider", "driver"]), text: z.string().min(1) });
+        const messages = await DMessageModel.find({ conversationId }).sort({
+            createdAt: 1,
+        }); // oldest → newest
+
+        const conversation = await ConversationModel.findById(conversationId);
+
+        return NextResponse.json({ messages, conversation }, { status: 200 });
+    } catch (err) {
+        console.error("❌ GET messages error:", err);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
+}
 
 export async function POST(req: NextRequest) {
-  await connectToDatabase();
-  const body = await req.json();
-  const parsed = MessageInput.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  const created = await MessageModel.create(parsed.data);
-  return NextResponse.json(created);
+    await connectToDatabase();
+    try {
+        const body = await req.json();
+        const { conversationId, senderId, receiverId, message } = body;
+
+        if (!conversationId || !senderId || !receiverId || !message) {
+            return NextResponse.json(
+                { error: "Missing required fields" },
+                { status: 400 }
+            );
+        }
+
+        const newMessage = await DMessageModel.create({
+            conversationId,
+            senderId,
+            receiverId,
+            message,
+        });
+
+        // update conversation's last message
+        await ConversationModel.findByIdAndUpdate(conversationId, {
+            lastMessage: message,
+            updatedAt: Date.now(),
+        });
+
+        console.log(newMessage);
+
+        return NextResponse.json(newMessage, { status: 201 });
+    } catch (err) {
+        console.error("❌ POST message error:", err);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
 }
-
-
