@@ -420,7 +420,7 @@ export default function RideShareBooking() {
                 <div className="flex gap-3">
                   <label className={`px-3 py-2 rounded-2xl border cursor-pointer ${payment === "card" ? "border-slate-900 bg-slate-50" : "border-slate-300"}`}>
                     <input type="radio" name="pay" className="mr-2" checked={payment === "card"} onChange={() => setPayment("card")} />
-                    Card (demo)
+                    Card
                   </label>
                   <label className={`px-3 py-2 rounded-2xl border cursor-pointer ${payment === "cash" ? "border-slate-900 bg-slate-50" : "border-slate-300"}`}>
                     <input type="radio" name="pay" className="mr-2" checked={payment === "cash"} onChange={() => setPayment("cash")} />
