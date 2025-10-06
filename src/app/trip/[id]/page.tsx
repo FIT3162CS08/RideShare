@@ -234,6 +234,7 @@ export default function TripByIdPage() {
                   <button 
                     onClick={() => {
                       console.log("Rate & Review button clicked");
+                      alert("Button clicked! Setting showReviewModal to true");
                       setShowReviewModal(true);
                     }}
                     disabled={hasReviewed}
@@ -248,6 +249,7 @@ export default function TripByIdPage() {
                   <button 
                     onClick={() => {
                       console.log("Test Review Modal button clicked");
+                      alert("Test button clicked! Setting showReviewModal to true");
                       setShowReviewModal(true);
                     }}
                     className="w-full px-4 py-3 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 transition-colors mt-2"

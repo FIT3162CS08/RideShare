@@ -57,8 +57,12 @@ export default function ReviewModal({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log("ReviewModal: isOpen is false, returning null");
+    return null;
+  }
 
+  console.log("ReviewModal: isOpen is true, rendering modal");
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
