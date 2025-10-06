@@ -15,13 +15,17 @@ export default function DriverPortalPage() {
         dropoff: string;
         fare: number;
     }>(null);
-    const [data, setData] = useState({
+    const [data, setData] = useState<{
+        trips: any[];
+        myTrips: any[];
+        activeRides: any[];
+    }>({
         trips: [],
         myTrips: [],
         activeRides: [],
     });
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState();
+    const [error, setError] = useState<any>(null);
 
     const [showChat, setShowChat] = useState(false);
     const { user } = useUser();
@@ -53,13 +57,13 @@ export default function DriverPortalPage() {
 
     useEffect(() => {
         const fetchBookings = async () => {
-            if (!user?.id) return; // ✅ guard
+            if (!user?._id) return; // ✅ guard
 
             setLoading(true);
             setError(null);
 
             try {
-                const res = await fetch(`/api/portal?driverId=${user.id}`);
+                const res = await fetch(`/api/portal?driverId=${user._id}`);
                 if (!res.ok) throw new Error(`Failed: ${res.status}`);
 
                 const data = await res.json();

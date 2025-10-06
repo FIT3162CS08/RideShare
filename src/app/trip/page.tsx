@@ -60,7 +60,7 @@ export default function TripPage() {
             setError(null);
 
             try {
-                const res = await fetch(`/api/bookings/me?userId=${user.id}`);
+                const res = await fetch(`/api/bookings/me?userId=${user._id}`);
                 if (!res.ok) throw new Error(`Failed: ${res.status}`);
 
                 const data = await res.json();

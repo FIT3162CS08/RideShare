@@ -96,7 +96,7 @@ export default function RideShareBooking() {
         notes,
         promo,
         payment,
-        userId: user.id,
+        userId: user._id,
       });
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -114,7 +114,7 @@ export default function RideShareBooking() {
           notes,
           promo,
           payment,
-          userId: user.id,
+          userId: user._id,
         }),
       });
       if (!res.ok) {
@@ -628,7 +628,7 @@ export default function RideShareBooking() {
               <StripePayment
                 amount={fare}
                 tripId={tripId}
-                userId={user.id}
+                userId={user._id}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
                 description={`RideShare trip from ${pickup} to ${dropoff}`}
