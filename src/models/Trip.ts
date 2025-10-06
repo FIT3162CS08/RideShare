@@ -4,6 +4,8 @@ const TripSchema = new Schema(
   {
     riderName: { type: String },
     driverName: { type: String },
+    riderId: { type: String, required: true },
+    driverId: { type: String, required: true },
     pickup: { type: String, required: true },
     dropoff: { type: String, required: true },
     fare: { type: Number, required: true },

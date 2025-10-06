@@ -41,4 +41,8 @@ const ReviewSchema = new Schema<IReview>({
 // Ensure one review per user per trip
 ReviewSchema.index({ userId: 1, tripId: 1 }, { unique: true });
 
+// Add indexes for efficient queries
+ReviewSchema.index({ driverId: 1, createdAt: -1 });
+ReviewSchema.index({ userId: 1, createdAt: -1 });
+
 export const ReviewModel = mongoose.models.Review || mongoose.model<IReview>("Review", ReviewSchema);

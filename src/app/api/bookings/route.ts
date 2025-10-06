@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
     pickup: booking.pickup,
     dropoff: booking.dropoff,
     fare: booking.fareEstimate,
+    riderId: data.userId || "rider123",
+    driverId: "driver123", // Default driver for demo - in real app this would be assigned
+    riderName: "Rider", // This should come from user data
+    driverName: "John D.", // This should come from driver data
   });
   booking.tripId = trip._id;
   await booking.save();

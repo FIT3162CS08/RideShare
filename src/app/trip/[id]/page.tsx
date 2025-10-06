@@ -13,6 +13,10 @@ type Trip = {
   dropoff: string;
   fare: number;
   status?: "waiting" | "picked_up" | "completed" | "cancelled";
+  riderId?: string;
+  driverId?: string;
+  riderName?: string;
+  driverName?: string;
 };
 
 export default function TripByIdPage() {
@@ -58,9 +62,6 @@ export default function TripByIdPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    console.log("showReviewModal changed:", showReviewModal);
-  }, [showReviewModal]);
 
   async function updateStatus(status: "picked_up" | "completed") {
     if (!trip) return;
@@ -91,7 +92,7 @@ export default function TripByIdPage() {
         body: JSON.stringify({
           rating,
           comment,
-          driverId: "driver123", // This should come from trip data
+          driverId: trip.driverId || "driver123", // Use actual driverId from trip
           userId: user._id,
           tripId: trip._id,
         }),
@@ -211,20 +212,9 @@ export default function TripByIdPage() {
                   Complete Trip
                 </button>
               )}
-              {tripStatus !== "completed" && (
-                <button 
-                  onClick={() => setTripStatus("completed")} 
-                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-2xl hover:bg-orange-700 transition-colors mb-2"
-                >
-                  Force Complete Trip (Debug)
-                </button>
-              )}
               {tripStatus === "completed" && (
                 <div className="text-center space-y-3">
                   <div className="text-lg font-semibold">Trip Summary</div>
-                  <div className="text-xs text-gray-500">
-                    Debug: tripStatus={tripStatus}, showReviewModal={showReviewModal.toString()}
-                  </div>
                   <div className="bg-gray-50 rounded-2xl p-4">
                     <div className="flex justify-between items-center">
                       <span>Fare</span>
@@ -232,11 +222,7 @@ export default function TripByIdPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => {
-                      console.log("Rate & Review button clicked");
-                      alert("Button clicked! Setting showReviewModal to true");
-                      setShowReviewModal(true);
-                    }}
+                    onClick={() => setShowReviewModal(true)}
                     disabled={hasReviewed}
                     className={`w-full px-4 py-3 rounded-2xl transition-colors ${
                       hasReviewed 
@@ -245,16 +231,6 @@ export default function TripByIdPage() {
                     }`}
                   >
                     {hasReviewed ? "Review Submitted ✓" : "Rate & Review Driver"}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log("Test Review Modal button clicked");
-                      alert("Test button clicked! Setting showReviewModal to true");
-                      setShowReviewModal(true);
-                    }}
-                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 transition-colors mt-2"
-                  >
-                    Test Review Modal (Debug)
                   </button>
                 </div>
               )}
@@ -282,7 +258,7 @@ export default function TripByIdPage() {
           isOpen={showReviewModal}
           onClose={() => setShowReviewModal(false)}
           onSubmit={handleReviewSubmit}
-          driverName="John D."
+          driverName={trip.driverName || "Driver"}
           tripDetails={{
             pickup: trip.pickup,
             dropoff: trip.dropoff,
