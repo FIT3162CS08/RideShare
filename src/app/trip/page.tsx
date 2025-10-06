@@ -63,7 +63,8 @@ export default function TripPage() {
         const openBooking = data.find((b) => b.open);
         if (mounted) {
           setBooking(openBooking ?? null);
-          if (openBooking?.status) setTripStatus(openBooking.status);
+          // if (openBooking?.status) setTripStatus(openBooking.status);
+          if (openBooking?.status) setTripStatus("waiting");
 
           const interval = setInterval(() => {
             if (mapRef.current && (window as any).google) {
