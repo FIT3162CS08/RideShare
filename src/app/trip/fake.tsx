@@ -4,22 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 
-type Booking = {
-  _id: string;
-  pickup: string;
-  dropoff: string;
-  fare: number;
-  open: boolean;
-  date?: string;
-  time?: string;
-  rideType?: string;
-  phone?: string;
-  payment?: string;
-  notes?: string;
-  status?: "waiting" | "picked_up" | "completed";
-};
+// Trip Page - Rider's view of their active trip
+export default function TripPage() {
+  const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
+  const [showChat, setShowChat] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
 
-const tripp = {
+  const trip = {
     id: "RS-ABC123",
     driver: "John D.",
     driverRating: 4.8,
@@ -44,86 +36,6 @@ const tripp = {
     eta: 3
   };
 
-export default function TripPage() {
-  const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
-  const [showChat, setShowChat] = useState(false);
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(true);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
-
-  // Fetch the user's open booking
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/bookings");
-        if (!res.ok) throw new Error("Failed to fetch bookings");
-        const data: Booking[] = await res.json();
-        const openBooking = data.find((b) => b.open);
-        if (mounted) {
-          setBooking(openBooking ?? null);
-          // if (openBooking?.status) setTripStatus(openBooking.status);
-          if (openBooking?.status) setTripStatus("waiting");
-
-          const interval = setInterval(() => {
-            if (mapRef.current && (window as any).google) {
-              clearInterval(interval);
-              console.log("HERE", booking, openBooking)
-
-              const map = new google.maps.Map(mapRef.current, {
-                zoom: 14,
-                // center: trip.pickup,
-              });
-
-              const directionsService = new google.maps.DirectionsService();
-              directionsRendererRef.current = new google.maps.DirectionsRenderer();
-              directionsRendererRef.current.setMap(map);
-
-              directionsService.route(
-                {
-                  origin: openBooking!.pickup,
-                  destination: openBooking!.dropoff,
-                  travelMode: google.maps.TravelMode.DRIVING,
-                },
-                (result, status) => {
-                  if (status === "OK" && result) {
-                    directionsRendererRef.current?.setDirections(result);
-                  } else {
-                    console.error("Directions request failed:", status);
-                  }
-                }
-              );
-            }
-          }, 100);
-
-          return () => clearInterval(interval);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Derived trip object (keeps existing fields/UI intact)
-  const trip = booking
-    ? {
-        id: booking._id || "N/A",
-        driver: tripp.driver || "John D.",
-        driverRating: tripp.driverRating ?? 4.8,
-        vehicle: booking.rideType || "Blue Toyota Camry - ABC123",
-        pickup: booking.pickup,
-        dropoff: booking.dropoff,
-        fare: booking.fare ?? 0,
-        eta: booking.time ?? 3,
-      }
-    : null;
-
   function markPickedUp() {
     setTripStatus("picked_up");
   }
@@ -132,50 +44,33 @@ export default function TripPage() {
     setTripStatus("completed");
   }
 
-  // Initialize map when trip data is ready
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     if (mapRef.current && (window as any).google) {
-  //       clearInterval(interval);
+  useEffect(() => {
+    if (!mapRef.current) return;
 
-  //       const map = new google.maps.Map(mapRef.current, {
-  //         zoom: 14,
-  //         // center: trip.pickup,
-  //       });
+    const map = new google.maps.Map(mapRef.current, {
+      zoom: 14,
+      center: { lat: -37.877, lng: 145.045 }, // Rough midpoint between Caulfield and Clayton
+    });
 
-  //       const directionsService = new google.maps.DirectionsService();
-  //       directionsRendererRef.current = new google.maps.DirectionsRenderer();
-  //       directionsRendererRef.current.setMap(map);
+    const directionsService = new google.maps.DirectionsService();
+    directionsRendererRef.current = new google.maps.DirectionsRenderer();
+    directionsRendererRef.current.setMap(map);
 
-  //       directionsService.route(
-  //         {
-  //           origin: trip!.pickup,
-  //           destination: trip!.dropoff,
-  //           travelMode: google.maps.TravelMode.DRIVING,
-  //         },
-  //         (result, status) => {
-  //           if (status === "OK" && result) {
-  //             directionsRendererRef.current?.setDirections(result);
-  //           } else {
-  //             console.error("Directions request failed:", status);
-  //           }
-  //         }
-  //       );
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(interval);
-  // }, []);
-
-  if (!trip) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center text-gray-500">
-          Loading your trip...
-        </div>
-      </ProtectedRoute>
+    directionsService.route(
+      {
+        origin: trip.pickup.location,
+        destination: trip.dropoff.location,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          directionsRendererRef.current?.setDirections(result);
+        } else {
+          console.error("Directions request failed:", status);
+        }
+      }
     );
-  }
+  }, []);
 
   return (
     <ProtectedRoute>
@@ -193,12 +88,7 @@ export default function TripPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 Chat with Driver
               </button>
@@ -214,12 +104,7 @@ export default function TripPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 {tripStatus === "waiting" && (
                   <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )}
                 {tripStatus === "picked_up" && (
@@ -229,22 +114,17 @@ export default function TripPage() {
                 )}
                 {tripStatus === "completed" && (
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )}
               </div>
-
+              
               <h1 className="text-2xl font-semibold mb-2">
                 {tripStatus === "waiting" && "Driver is on the way"}
                 {tripStatus === "picked_up" && "Trip in progress"}
                 {tripStatus === "completed" && "Trip completed"}
               </h1>
-
+              
               <p className="text-gray-600">
                 {tripStatus === "waiting" && `ETA: ${trip.eta} minutes`}
                 {tripStatus === "picked_up" && "Enjoy your ride!"}
@@ -257,12 +137,7 @@ export default function TripPage() {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
                 <div className="flex-1">
@@ -278,22 +153,20 @@ export default function TripPage() {
               </div>
             </div>
 
-            {/* Pickup/Dropoff + Map + Actions + Summary remain identical */}
-            {/* ...same UI code as before... */}
             {/* Trip Details */}
             <div className="space-y-4 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <div>
                   <div className="font-medium">Pickup</div>
-                  <div className="text-sm text-gray-500">{trip.pickup}</div>
+                  <div className="text-sm text-gray-500">{trip.pickup.formatted_address}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <div>
                   <div className="font-medium">Dropoff</div>
-                  <div className="text-sm text-gray-500">{trip.dropoff}</div>
+                  <div className="text-sm text-gray-500">{trip.dropoff.formatted_address}</div>
                 </div>
               </div>
             </div>
@@ -355,10 +228,10 @@ export default function TripPage() {
                 <span>Card ending in 1234</span>
               </div>
             </div>
-
           </div>
         </main>
 
+        {/* Chat Modal */}
         <Chat
           isOpen={showChat}
           onClose={() => setShowChat(false)}
