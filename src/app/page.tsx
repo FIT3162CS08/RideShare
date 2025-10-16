@@ -7,6 +7,7 @@ import Loading from "@/component/Loading";
 import AutocompleteInput from "@/component/AutocompleteInput";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import useSocket from "./../socket/useSocket";
 
 export default function HomePage() {
   const { user, loading, logout, setPickupContext, setDropoffContext } = useUser();
@@ -17,6 +18,8 @@ export default function HomePage() {
   const [dropoffLoc, setDropoffLoc] = useState<google.maps.places.PlaceResult | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+
+  const { isConnected, transport } = useSocket();
 
   const router = useRouter();
 

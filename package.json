@@ -3,33 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npx tsx server.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.544.0",
     "mongoose": "^8.18.2",
     "next": "15.4.5",
     "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.12",
+    "@types/bcryptjs": "^2.4.6",
     "@types/google.maps": "^3.58.1",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/bcryptjs": "^2.4.6",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "tailwindcss": "^4.1.12",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
