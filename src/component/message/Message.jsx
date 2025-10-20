@@ -40,7 +40,6 @@ export default function Message() {
         socket.on("newMessage", ({ msg, conversationId }) => {
             setSocketData({ msg, conversationId });
             console.log("SOCKET DATA: ", msg, conversationId)
-
         });
 
         if (user) {
@@ -97,6 +96,8 @@ export default function Message() {
         if (!newMessage.trim()) return;
         if (!reciever || !user) return;
 
+        console.log(user._id, " send to: ", reciever)
+
         socket.emit("message", {
             conversationId: activeChat,
             senderId: user._id,
@@ -114,7 +115,7 @@ export default function Message() {
         return <h1></h1>
     }
 
-    console.log("CONVERSATION : ", conversations)
+     
 
     return (
         <div className="flex fixed h-64 w-1/2 right-5 bottom-5 border rounded-lg overflow-hidden shadow-md bg-white">
