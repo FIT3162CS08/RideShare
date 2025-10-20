@@ -1,0 +1,16 @@
+config:
+  target: "http://localhost:3000" 
+  phases: 
+    - duration: 1 # test for 1 seconds s
+      arrivalRate: 500 # start with 1 users/sec 
+  defaults: 
+    headers: 
+      Content-Type: "application/json" 
+scenarios: 
+  - name: "User logs in and fetches rides" 
+    flow: 
+      - get: 
+          url: "/api/bookings?driverId=JXraOWW7IDdaSO0wAAAB" 
+          headers: 
+            Content-Type: "application/json" 
+            Cookie: "__session=eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yd3pWSzJIRFFxaml0TlBXWlVTOG91R1FxNW0iLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NDc1MDI5MTcsImZ2YSI6WzY4LC0xXSwiaWF0IjoxNzQ3NTAyODU3LCJpc3MiOiJodHRwczovL2Z1bmt5LWRvdmUtODQuY2xlcmsuYWNjb3VudHMuZGV2IiwibmJmIjoxNzQ3NTAyODQ3LCJzaWQiOiJzZXNzXzJ4RU1MYUxJWDAzY1ljTUJpSzR6ajRRcmdFbSIsInN1YiI6InVzZXJfMnhFSllGeEtxdmxDNmlyYk5VTFh6MWd4N2hwIiwidiI6Mn0.GSBkq0IU7sznEQQo_Ux2sfFda2STbUfYs_yGFdL43KU7VVIfcA50cwYixaF87LxgUy-oWdKr8IeEYRTt9SIvlyGiDbvIUi6npOTlJ2zH-0H4LjQwPUX6wRyzT-dvKvz5KR4A8yb5_bQqR4cNsHaUyVLCBLjH56wMLUGsUyIMh_uzNiuSTyg-hzcmi9izN-eu5SRh38opEz2Yc5GTRy-2Y5Nejte1pyw98fJaLZ11T1pG4HkRacF-swjHbgmcUtmEjyAmgUIo75wm0wlbQpX65EyxgCBWb31RMVmt6oW5O9mquDLF-jfAME_RQUFgQxM1rbM8xn8njg3BqIFT-rRSJA; __session_5dTTkPwI=eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yd3pWSzJIRFFxaml0TlBXWlVTOG91R1FxNW0iLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NDc1MDI5MTcsImZ2YSI6WzY4LC0xXSwiaWF0IjoxNzQ3NTAyODU3LCJpc3MiOiJodHRwczovL2Z1bmt5LWRvdmUtODQuY2xlcmsuYWNjb3VudHMuZGV2IiwibmJmIjoxNzQ3NTAyODQ3LCJzaWQiOiJzZXNzXzJ4RU1MYUxJWDAzY1ljTUJpSzR6ajRRcmdFbSIsInN1YiI6InVzZXJfMnhFSllGeEtxdmxDNmlyYk5VTFh6MWd4N2hwIiwidiI6Mn0.GSBkq0IU7sznEQQo_Ux2sfFda2STbUfYs_yGFdL43KU7VVIfcA50cwYixaF87LxgUy-oWdKr8IeEYRTt9SIvlyGiDbvIUi6npOTlJ2zH-0H4LjQwPUX6wRyzT-dvKvz5KR4A8yb5_bQqR4cNsHaUyVLCBLjH56wMLUGsUyIMh_uzNiuSTyg-hzcmi9izN-eu5SRh38opEz2Yc5GTRy-2Y5Nejte1pyw98fJaLZ11T1pG4HkRacF-swjHbgmcUtmEjyAmgUIo75wm0wlbQpX65EyxgCBWb31RMVmt6oW5O9mquDLF-jfAME_RQUFgQxM1rbM8xn8njg3BqIFT-rRSJA;"
