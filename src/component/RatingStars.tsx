@@ -46,26 +46,27 @@ export default function RatingStars({
   const displayRating = interactive ? (hoverRating || rating) : rating;
   
   return (
-    <div className="flex items-center gap-1">
-      <div className="flex items-center">
+    <div className="flex items-center gap-1 relative z-20">
+      <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type="button"
-            className={`${sizeClasses[size]} transition-colors ${
-              interactive ? "cursor-pointer hover:scale-110" : "cursor-default"
+            className={`p-1 transition-all duration-200 relative z-20 ${
+              interactive ? "cursor-pointer hover:scale-125 active:scale-110" : "cursor-default pointer-events-none"
             }`}
             onClick={() => handleClick(star)}
             onMouseEnter={() => handleMouseEnter(star)}
             onMouseLeave={handleMouseLeave}
             disabled={!interactive}
+            style={{ pointerEvents: interactive ? 'auto' : 'none' }}
           >
             <svg
               className={`${sizeClasses[size]} ${
                 star <= displayRating
-                  ? "text-yellow-400"
+                  ? "text-yellow-400 drop-shadow-[0_2px_4px_rgba(250,204,21,0.5)]"
                   : "text-gray-300"
-              } transition-colors`}
+              } transition-all duration-200 pointer-events-none`}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -75,10 +76,11 @@ export default function RatingStars({
         ))}
       </div>
       {showNumber && (
-        <span className="ml-2 text-sm font-medium text-gray-700">
+        <span className="ml-2 text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
           {rating.toFixed(1)}
         </span>
       )}
     </div>
   );
 }
+

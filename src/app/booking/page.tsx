@@ -151,8 +151,6 @@ export default function RideShareBooking() {
         body: JSON.stringify({
           pickup,
           dropoff,
-          distanceKm,
-          fare,
           whenNow,
           date,
           time,
@@ -166,6 +164,15 @@ export default function RideShareBooking() {
           userId: user?._id,
         }),
       });
+      
+      // Check if response is actually JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Server returned invalid response. Please try again.");
+      }
+      
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(`Failed to create booking: ${errorData.error || res.statusText}`);

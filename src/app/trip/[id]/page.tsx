@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Chat from "@/component/Chat";
-import ReviewModal from "@/component/ReviewModal";
 import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/component/ProtectedRoute";
-import { useUser } from "@/context/UserContext";
 
 type Trip = {
   _id: string;
@@ -13,24 +11,16 @@ type Trip = {
   dropoff: string;
   fare: number;
   status?: "waiting" | "picked_up" | "completed" | "cancelled";
-  riderId?: string;
-  driverId?: string;
-  riderName?: string;
-  driverName?: string;
 };
 
 export default function TripByIdPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useUser();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -39,12 +29,7 @@ export default function TripByIdPage() {
     setError(null);
     fetch(`/api/trips/${id}`)
       .then((res) => {
-        if (!res.ok) {
-          if (res.status === 400) {
-            throw new Error("Invalid trip ID format");
-          }
-          throw new Error(`Failed to fetch trip: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
         return res.json();
       })
       .then((data: Trip) => {
@@ -67,7 +52,6 @@ export default function TripByIdPage() {
     };
   }, [id]);
 
-
   async function updateStatus(status: "picked_up" | "completed") {
     if (!trip) return;
     try {
@@ -84,20 +68,6 @@ export default function TripByIdPage() {
       console.error(e);
       alert("Could not update trip status");
     }
-  }
-
-  async function handleReviewSubmit(rating: number, comment: string) {
-    if (!trip || !user) return;
-    
-    setReviewLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setHasReviewed(true);
-      setShowReviewModal(false);
-      setReviewLoading(false);
-      alert("Review Submitted! Thank you for your feedback.");
-    }, 1000);
   }
 
   if (loading) {
@@ -207,16 +177,8 @@ export default function TripByIdPage() {
                       <span className="text-xl font-bold">${trip.fare.toFixed(2)}</span>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setShowReviewModal(true)}
-                    disabled={hasReviewed}
-                    className={`w-full px-4 py-3 rounded-2xl transition-colors ${
-                      hasReviewed 
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                  >
-                    {hasReviewed ? "Review Submitted ✓" : "Rate & Review Driver"}
+                  <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors">
+                    Rate & Review Driver
                   </button>
                 </div>
               )}
@@ -239,19 +201,6 @@ export default function TripByIdPage() {
         </main>
 
         <Chat isOpen={showChat} onClose={() => setShowChat(false)} riderName="You" driverName="Your Driver" role="rider" />
-
-        <ReviewModal
-          isOpen={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
-          onSubmit={handleReviewSubmit}
-          driverName={trip.driverName || "Driver"}
-          tripDetails={{
-            pickup: trip.pickup,
-            dropoff: trip.dropoff,
-            fare: trip.fare,
-          }}
-          loading={reviewLoading}
-        />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
           © {new Date().getFullYear()} RideShare. Mongo-backed demo.

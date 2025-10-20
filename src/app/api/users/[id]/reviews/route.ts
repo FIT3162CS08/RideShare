@@ -88,3 +88,57 @@ export async function GET(
     );
   }
 }
+
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  await connectToDatabase();
+  
+  try {
+    const { id: driverId } = await context.params;
+    const body = await req.json();
+    const { rating, comment, userId, tripId } = body;
+    
+    // Validate input
+    if (!rating || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: "Rating must be between 1 and 5" },
+        { status: 400 }
+      );
+    }
+    
+    if (!comment || comment.trim().length < 10) {
+      return NextResponse.json(
+        { error: "Comment must be at least 10 characters" },
+        { status: 400 }
+      );
+    }
+    
+    // Create the review
+    const review = await ReviewModel.create({
+      driverId,
+      userId: userId || "anonymous",
+      tripId: tripId || null,
+      rating,
+      comment: comment.trim(),
+    });
+    
+    return NextResponse.json({
+      success: true,
+      review: {
+        _id: review._id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating review:", error);
+    return NextResponse.json(
+      { error: "Failed to create review" },
+      { status: 500 }
+    );
+  }
+}
+

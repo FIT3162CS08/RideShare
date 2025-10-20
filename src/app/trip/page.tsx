@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
-import ReviewModal from "@/component/ReviewModal";
 import ProtectedRoute from "@/component/ProtectedRoute";
+import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
 
 type Booking = {
@@ -19,6 +19,7 @@ type Booking = {
   payment?: string;
   notes?: string;
   status?: "waiting" | "picked_up" | "completed";
+  driverId?: string;
 };
 
 const tripp = {
@@ -50,28 +51,12 @@ export default function TripPage() {
   const { user } = useUser();
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
-  const [booking, setBooking] = useState<Booking | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [hasReviewed, setHasReviewed] = useState(false);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
-
-  // Review submission handler
-  async function handleReviewSubmit(rating: number, comment: string) {
-    if (!user) return;
-    
-    setReviewLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setHasReviewed(true);
-      setShowReviewModal(false);
-      setReviewLoading(false);
-      alert("Review Submitted! Thank you for your feedback.");
-    }, 1000);
-  }
 
   // Fetch the user's open booking
   useEffect(() => {
@@ -153,6 +138,59 @@ export default function TripPage() {
     setTripStatus("completed");
   }
 
+  async function handleReviewSubmit(rating: number, comment: string) {
+    if (!trip) return;
+    
+    setSubmittingReview(true);
+    try {
+      // For demo purposes, use a placeholder driver ID
+      // In production, this would come from the booking/trip data
+      const driverId = booking?.driverId || "demo-driver-123";
+      
+      const res = await fetch(`/api/users/${driverId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          comment,
+          tripId: trip.id,
+          userId: user?._id || "anonymous",
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to submit review");
+      }
+
+      const data = await res.json();
+      console.log("Review submitted successfully:", data);
+      
+      // Success!
+      setShowReviewModal(false);
+      
+      // Show beautiful success message
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl animate-fadeIn z-50 font-bold';
+      successDiv.innerHTML = '🌟 Thank you for your review!';
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
+      
+    } catch (error) {
+      console.error("Review error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit review. Please try again.";
+      
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl animate-fadeIn z-50 font-bold';
+      errorDiv.innerHTML = `❌ ${errorMessage}`;
+      document.body.appendChild(errorDiv);
+      setTimeout(() => errorDiv.remove(), 4000);
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
   // Initialize map when trip data is ready
   // useEffect(() => {
   //   const interval = setInterval(() => {
@@ -200,20 +238,25 @@ export default function TripPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50 text-slate-900">
-        {/* Header */}
-        <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Enhanced Header */}
+        <header className="sticky top-0 z-10 glass-strong border-b border-white/30 shadow-lg">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">RS</div>
-              <span className="font-semibold tracking-tight">Your Trip</span>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white grid place-items-center font-bold shadow-lg animate-float">
+                🚗
+              </div>
+              <div>
+                <span className="font-bold text-lg gradient-text-blue">Your Trip</span>
+                <p className="text-xs text-gray-600">Track your ride in real-time</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setShowChat(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 font-medium shadow-lg"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -221,20 +264,24 @@ export default function TripPage() {
                     d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                   />
                 </svg>
-                Chat with Driver
+                <span>Chat with Driver</span>
               </button>
             </div>
           </div>
         </header>
 
-        {/* Main */}
-        <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-          {/* Trip Status */}
-          <div className="bg-white rounded-3xl border p-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* Main with animations */}
+        <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+          {/* Trip Status - Enhanced */}
+          <div className="glass-strong rounded-3xl p-8 shadow-2xl border border-white/30 animate-scaleIn">
+            <div className="text-center mb-8">
+              <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl ${
+                tripStatus === "waiting" ? "bg-gradient-to-br from-blue-400 to-blue-600 animate-pulse" :
+                tripStatus === "picked_up" ? "bg-gradient-to-br from-green-400 to-green-600" :
+                "bg-gradient-to-br from-purple-400 to-purple-600"
+              }`}>
                 {tripStatus === "waiting" && (
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -244,12 +291,12 @@ export default function TripPage() {
                   </svg>
                 )}
                 {tripStatus === "picked_up" && (
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
                 {tripStatus === "completed" && (
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -260,40 +307,43 @@ export default function TripPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl font-semibold mb-2">
+              <h1 className="text-3xl font-bold mb-3 gradient-text-blue">
                 {tripStatus === "waiting" && "Driver is on the way"}
                 {tripStatus === "picked_up" && "Trip in progress"}
                 {tripStatus === "completed" && "Trip completed"}
               </h1>
 
-              <p className="text-gray-600">
-                {tripStatus === "waiting" && `ETA: ${trip.eta} minutes`}
-                {tripStatus === "picked_up" && "Enjoy your ride!"}
-                {tripStatus === "completed" && "Thank you for using RideShare!"}
+              <p className="text-lg text-gray-600 font-medium">
+                {tripStatus === "waiting" && `⏱️ ETA: ${trip.eta} minutes`}
+                {tripStatus === "picked_up" && "🚗 Enjoy your ride!"}
+                {tripStatus === "completed" && "✨ Thank you for using RideShare!"}
               </p>
             </div>
 
-            {/* Driver Info */}
-            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+            {/* Driver Info - Enhanced */}
+            <div className="relative overflow-hidden rounded-2xl p-5 mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-100">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold">{trip.driver}</div>
-                  <div className="text-sm text-gray-500">{trip.vehicle}</div>
+                  <div className="font-bold text-lg text-gray-800">{trip.driver}</div>
+                  <div className="text-sm text-gray-600 font-medium">{trip.vehicle}</div>
                   <div className="flex items-center gap-1 mt-1">
-                    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-yellow-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                    <span className="text-sm text-gray-600">{trip.driverRating}</span>
+                    <span className="text-sm font-bold text-gray-800">{trip.driverRating}</span>
                   </div>
                 </div>
               </div>
@@ -301,90 +351,108 @@ export default function TripPage() {
 
             {/* Pickup/Dropoff + Map + Actions + Summary remain identical */}
             {/* ...same UI code as before... */}
-            {/* Trip Details */}
+            {/* Trip Details - Enhanced */}
             <div className="space-y-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <div className="font-medium">Pickup</div>
-                  <div className="text-sm text-gray-500">{trip.pickup}</div>
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800">Pickup Location</div>
+                  <div className="text-sm text-gray-600">{trip.pickup}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div>
-                  <div className="font-medium">Dropoff</div>
-                  <div className="text-sm text-gray-500">{trip.dropoff}</div>
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800">Dropoff Location</div>
+                  <div className="text-sm text-gray-600">{trip.dropoff}</div>
                 </div>
               </div>
             </div>
 
-            {/* Map */}
-            <div className="w-full h-72 rounded-2xl overflow-hidden mb-6">
+            {/* Map - Enhanced */}
+            <div className="w-full h-80 rounded-3xl overflow-hidden mb-6 shadow-2xl border-4 border-white">
               <div ref={mapRef} className="w-full h-full" />
             </div>
 
-            {/* Trip Actions */}
+            {/* Trip Actions - Enhanced */}
             <div className="mt-6 space-y-3">
               {tripStatus === "waiting" && (
                 <button
                   onClick={markPickedUp}
-                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  Mark as Picked Up (Demo)
+                  ✓ Mark as Picked Up (Demo)
                 </button>
               )}
               {tripStatus === "picked_up" && (
                 <button
                   onClick={completeTrip}
-                  className="w-full px-4 py-3 bg-green-600 text-white rounded-2xl hover:bg-green-700 transition-colors"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  Complete Trip (Demo)
+                  ✓ Complete Trip (Demo)
                 </button>
               )}
               {tripStatus === "completed" && (
-                <div className="text-center space-y-3">
-                  <div className="text-lg font-semibold">Trip Summary</div>
-                  <div className="bg-gray-50 rounded-2xl p-4">
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold gradient-text-blue mb-4">Trip Summary</h3>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-3xl p-6 border-2 border-green-200 shadow-lg">
                     <div className="flex justify-between items-center">
-                      <span>Fare</span>
-                      <span className="text-xl font-bold">${trip.fare.toFixed(2)}</span>
+                      <div>
+                        <div className="text-sm text-gray-600 font-medium">Total Fare</div>
+                        <div className="text-3xl font-bold text-green-700">${trip.fare.toFixed(2)}</div>
+                      </div>
+                      <div className="text-5xl">💰</div>
                     </div>
                   </div>
                   <button 
                     onClick={() => setShowReviewModal(true)}
-                    disabled={hasReviewed}
-                    className={`w-full px-4 py-3 rounded-2xl transition-colors ${
-                      hasReviewed 
-                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
                   >
-                    {hasReviewed ? 'Review Submitted ✓' : 'Rate & Review Driver'}
+                    ⭐ Rate & Review Driver
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Trip Info */}
-          <div className="bg-white rounded-3xl border p-6">
-            <h3 className="text-lg font-semibold mb-4">Trip Information</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Trip ID</span>
-                <span className="font-mono">{trip.id}</span>
+          {/* Trip Info - Enhanced */}
+          <div className="glass-strong rounded-3xl p-6 shadow-xl border border-white/30 animate-slideInRight">
+            <h3 className="text-xl font-bold gradient-text-blue mb-6 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Trip Information
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                <span className="text-gray-600 font-medium">Trip ID</span>
+                <span className="font-mono font-bold text-gray-800">{trip.id.slice(-8)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Estimated Fare</span>
-                <span className="font-semibold">${trip.fare.toFixed(2)} AUD</span>
+              <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                <span className="text-gray-600 font-medium">Estimated Fare</span>
+                <span className="font-bold text-lg gradient-text-blue">${trip.fare.toFixed(2)} AUD</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Payment Method</span>
-                <span>Card ending in 1234</span>
+              <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                <span className="text-gray-600 font-medium">Payment Method</span>
+                <span className="font-semibold text-gray-800 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Card •••• 1234
+                </span>
               </div>
             </div>
-
           </div>
         </main>
 
@@ -392,7 +460,7 @@ export default function TripPage() {
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           riderName="You"
-          driverName="Driver"
+          driverName={trip.driver}
           role="rider"
         />
 
@@ -400,17 +468,17 @@ export default function TripPage() {
           isOpen={showReviewModal}
           onClose={() => setShowReviewModal(false)}
           onSubmit={handleReviewSubmit}
-          driverName="Driver"
+          driverName={trip.driver}
           tripDetails={{
             pickup: trip.pickup,
             dropoff: trip.dropoff,
             fare: trip.fare,
           }}
-          loading={reviewLoading}
+          loading={submittingReview}
         />
 
-        <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
-          © {new Date().getFullYear()} RideShare. Localhost demo.
+        <footer className="max-w-6xl mx-auto px-4 py-10 text-center">
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} RideShare. Safe travels! 🚗✨</p>
         </footer>
       </div>
     </ProtectedRoute>
