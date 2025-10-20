@@ -1,0 +1,25 @@
+config:
+  target: "http://localhost:3000/api"
+  phases:
+    - duration: 5
+      arrivalRate: 100
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "User logs in and fetches portal data"
+    flow:
+      # 1️⃣ Login request
+      - post:
+          url: "/auth/login"
+          json:
+            email: "rudrabassi011@gmail.com"
+            password: "rudrabassi01@gmail.com"
+
+      # 3️⃣ Fetch the portal (authenticated)
+      - get:
+          url: "/bookings?driverId=JXraOWW7IDdaSO0wAAAB"
+          headers:
+            Content-Type: "application/json" 
+            Cookie: "__session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWVlZjgzZWY4ZjQ3ZGE5MWM1ZGFhYyIsImVtYWlsIjoicnVkcmFiYXNzaTAxMUBnbWFpbC5jb20iLCJuYW1lIjoicnVkcmFiYXNzaTAxMUBnbWFpbC5jb20iLCJpYXQiOjE3NjA5MjU4ODAsImV4cCI6MTc2MTAxMjI4MH0.FEG_hjbx59a0T_f3mK-89Du5RmqZ2heRa7eCXqkl3qU"

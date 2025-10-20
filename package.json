@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "artillery": "^2.0.26",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
