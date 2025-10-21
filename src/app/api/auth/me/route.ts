@@ -17,7 +17,13 @@ export async function GET() {
     await connectToDatabase();
 
     // Fetch the full user from DB
-    const user = await UserModel.findById(decoded.id).lean();
+    const user = await UserModel.findById(decoded.id).exec();
+
+    console.log("USER SERVER" + JSON.stringify(user))
+
+    // if (user && !("currentTrip" in user)) {
+    //   user.currentTrip = null;
+    // }
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

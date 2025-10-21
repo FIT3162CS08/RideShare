@@ -18,6 +18,7 @@ const BookingSchema = new Schema(
     status: { type: String, enum: ["requested", "accepted", "completed", "cancelled"], default: "requested" },
     open: { type: Boolean, default: true },
     userId: { type: String },
+    driverId: { type: String },
     tripId: { type: Schema.Types.ObjectId, ref: "Trip" },
   },
   { timestamps: true }

@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { BookingModel } from "@/models/Booking";
 import { TripModel } from "@/models/Trip";
 import { z } from "zod";
+import { UserModel } from "@/models/User";
 
 const BookingInput = z.object({
   pickup: z.string().min(2),
@@ -73,9 +74,43 @@ export async function POST(req: NextRequest) {
   });
   
   // Link trip to booking
-  booking.tripId = trip._id;
+  booking.tripId = trip._id as any;
   await booking.save();
 
+  if (data.userId) {
+    console.log("FROMAPI", JSON.stringify(data));
+    console.log("Trip ID to set:", trip._id);
+
+    try {
+      // First, let's check the user before update
+      const userBefore = await UserModel.findById(data.userId).exec();
+      console.log("User before update:", userBefore?.toObject());
+      console.log("User before currentTrip:", userBefore?.currentTrip);
+
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        data.userId,
+        { $set: { currentTrip: trip._id } },
+        { new: true, runValidators: true, useFindAndModify: false }
+      ).exec();
+
+      if (updatedUser) {
+        console.log("Updated user with currentTrip:", updatedUser.toObject());
+        console.log("currentTrip field exists:", 'currentTrip' in updatedUser);
+        console.log("currentTrip value:", updatedUser.currentTrip);
+        console.log("currentTrip type:", typeof updatedUser.currentTrip);
+        
+        // Double-check by querying the user again
+        const verifyUser = await UserModel.findById(data.userId).exec();
+        console.log("Verification query - currentTrip:", verifyUser?.currentTrip);
+      } else {
+        console.error("Failed to update user - user not found:", data.userId);
+      }
+    } catch (error) {
+      console.error("Error updating user currentTrip:", error);
+    }
+  }
+
+  
   return NextResponse.json({ bookingId: booking._id, tripId: trip._id, fare: finalFare });
 }
 

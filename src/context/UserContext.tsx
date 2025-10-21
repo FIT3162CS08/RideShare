@@ -39,17 +39,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
+      console.log('Refreshing user...');
       const res = await fetch(`${API_BASE}/auth/me`, {
         credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
+        console.log('User data from API:', data.user);
         setUser(data.user || data);
-        console.log(data.user)
+        console.log('User state updated:', data.user);
       } else {
+        console.log('Failed to refresh user, status:', res.status);
         setUser(null);
       }
-    } catch {
+    } catch (error) {
+      console.log('Error refreshing user:', error);
       setUser(null);
     } finally {
       setLoading(false);
