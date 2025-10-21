@@ -16,6 +16,39 @@ export default function DriverPortalPage() {
     fare: number;
   }>(null);
   const [showChat, setShowChat] = useState(false);
+  const [conversation, setConversation] = useState({messages: [], convId: null});
+  const {user} = useUser()
+
+
+  // userId must be fetched from page
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user) return;
+        try {
+          console.log("IDS: ", user._id, '68df43eeb62c6d544a5dcac7')
+            const res = await fetch(`/api/message?userId=${'68df43eeb62c6d544a5dcac7'}&driverId=${user._id}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+      console.log("MSG: ", msg)
+      setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation])
 
   function goOnline() {
     setOnline(true);
