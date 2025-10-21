@@ -310,7 +310,7 @@ body {
               0 10px 20px rgba(59, 130, 246, 0.15);
 }
 
-.card-hover:hover::before {
+.card-hover::before {
   content: '';
   position: absolute;
   inset: -2px;
@@ -319,6 +319,7 @@ body {
   z-index: -1;
   opacity: 0;
   animation: borderGlow 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .card-hover:hover::before {
@@ -347,6 +348,8 @@ body {
   border-radius: inherit;
   opacity: 0;
   transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .card-premium:hover::before {
@@ -357,6 +360,17 @@ body {
   transform: translateY(-6px) scale(1.01);
   box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3),
               0 10px 20px rgba(118, 75, 162, 0.2);
+}
+
+.card-premium > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure all inputs are clickable */
+input, textarea, select, button, a {
+  position: relative;
+  z-index: 10;
 }
 
 /* Beautiful scrollbar */
