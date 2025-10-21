@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
-import Message from "@/component/message/Message"
+import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
 
 // Driver Portal — localhost demo
 export default function DriverPortalPage() {
@@ -45,8 +46,8 @@ export default function DriverPortalPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                passenger: '68e341296877a8123bb1f261',
-                driver: '68e3422e6877a8123bb1f265',
+                passenger: '68df43eeb62c6d544a5dcac7',
+                driver: '68f79222ae086705ddfd1477',
                 pickup: '35 plowman court, Epping',
                 dropoff: 'Monash Clayton',
                 date: '2004-03-10',
@@ -83,6 +84,22 @@ export default function DriverPortalPage() {
                   Chat
                 </button>
               )}
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowChat(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 font-medium shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span>Chat with Driver</span>
+              </button>
             </div>
           </div>
         </header>
@@ -223,18 +240,20 @@ export default function DriverPortalPage() {
         {/* Chat Modal */}
         <Chat
           isOpen={showChat}
+          conversation={conversation}
           onClose={() => setShowChat(false)}
-          riderName={currentTrip?.rider || "Rider"}
+          riderName="XXXXXXX"
           driverName="You"
           role="driver"
+          user={user}
         />
+        
 
         <button onClick={() => startConversation()}>START CONVERSATION</button>
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500 text-center">
           © {new Date().getFullYear()} RideShare Driver. Localhost demo.
         </footer>
-        <Message />
       </div>
     </ProtectedRoute>
   );

@@ -5,6 +5,7 @@ import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
 
 type Booking = {
   _id: string;
@@ -45,7 +46,7 @@ const tripp = {
     },
     fare: 23.75,
     eta: 3
-  };
+};
 
 export default function TripPage() {
   const { user } = useUser();
@@ -57,6 +58,7 @@ export default function TripPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const [conversation, setConversation] = useState({messages: [], convId: null});
 
   // Fetch the user's open booking
   useEffect(() => {
@@ -75,7 +77,6 @@ export default function TripPage() {
           const interval = setInterval(() => {
             if (mapRef.current && (window as any).google) {
               clearInterval(interval);
-              console.log("HERE", booking, openBooking)
 
               const map = new google.maps.Map(mapRef.current, {
                 zoom: 14,
@@ -164,7 +165,6 @@ export default function TripPage() {
       }
 
       const data = await res.json();
-      console.log("Review submitted successfully:", data);
       
       // Success!
       setShowReviewModal(false);
@@ -225,6 +225,39 @@ export default function TripPage() {
 
   //   return () => clearInterval(interval);
   // }, []);
+  
+
+  // Fetch messages and setup Socket
+  // DRIVER ID: 68df43eeb62c6d544a5dcac7. USER ID: 68f79222ae086705ddfd1477. 
+  // driverId must be fetched from page
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user) return;
+        try {
+            console.log("IDS: ", user._id, '68f79222ae086705ddfd1477')
+            const res = await fetch(`/api/message?userId=${user._id}&driverId=${'68f79222ae086705ddfd1477'}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+        setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation])
+
 
   if (!trip) {
     return (
@@ -458,10 +491,12 @@ export default function TripPage() {
 
         <Chat
           isOpen={showChat}
+          conversation={conversation}
           onClose={() => setShowChat(false)}
           riderName="You"
-          driverName={trip.driver}
+          driverName="XXXXXXX"
           role="rider"
+          user={user}
         />
 
         <ReviewModal

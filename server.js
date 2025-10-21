@@ -20,14 +20,43 @@ app.prepare().then(() => {
     io.on("connection", (socket) => {
         console.log("User connected:", socket.id);
 
+
         socket.on("message", async (data) => {
+            // const { conversationId, senderId, receiverId, newMessage } =
+            //     data;
+            // io.to(senderId).emit("newMessage", {
+            //     msg: {
+            //         conversationId,
+            //         senderId,
+            //         receiverId,
+            //         message: newMessage,
+            //         seen: false,
+            //         createdAt: "2025-10-03T03:33:02.516Z",
+            //         _id: Math.random()
+            //     },
+            //     conversationId,
+            // });
+            // io.to(receiverId).emit("newMessage", {
+            //     msg: {
+            //         conversationId,
+            //         senderId,
+            //         receiverId,
+            //         message: newMessage,
+            //         seen: false,
+            //         createdAt: "2025-10-03T03:33:02.516Z",
+            //         _id: Math.random()
+            //     },
+            //     conversationId,
+            // });
+            // return;
+
+
             connectToDatabase();
             try {
-                console.log("MESSAGE")
                 const { conversationId, senderId, receiverId, newMessage } =
                     data;
 
-                    console.log("DATA: ", data)
+                console.log("DATA: ", data)
                 if (
                     !conversationId ||
                     !senderId ||
