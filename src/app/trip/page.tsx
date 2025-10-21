@@ -448,12 +448,22 @@ export default function TripPage() {
                       <div className="text-5xl">💰</div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setShowReviewModal(true)}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
-                  >
-                    ⭐ Rate & Review Driver
-                  </button>
+                  
+                  {/* Only show review button if a driver was assigned */}
+                  {booking?.driverId && booking.driverId !== "unassigned" ? (
+                    <button 
+                      onClick={() => setShowReviewModal(true)}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
+                    >
+                      ⭐ Rate & Review Driver
+                    </button>
+                  ) : (
+                    <div className="text-center p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+                      <p className="text-gray-600 font-medium">
+                        No driver was assigned to this trip
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
