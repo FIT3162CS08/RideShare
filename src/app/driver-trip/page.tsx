@@ -3,64 +3,64 @@
 import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
-import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
 
-type Booking = {
+type Trip = {
   _id: string;
   pickup: string;
   dropoff: string;
   fare: number;
-  open: boolean;
-  date?: string;
-  time?: string;
-  rideType?: string;
-  phone?: string;
-  payment?: string;
-  notes?: string;
-  status?: "waiting" | "picked_up" | "completed";
+  status: string;
+  createdAt: string;
   driverId?: string;
+  riderId?: string;
+  riderName?: string;
+  riderPhone?: string;
 };
 
-export default function TripPage() {
+export default function DriverTripPage() {
   const { user } = useUser();
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
   const [showChat, setShowChat] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submittingReview, setSubmittingReview] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
 
-  // Fetch the user's current trip
+  // Fetch the driver's current trip
   useEffect(() => {
     let mounted = true;
     const fetchTripData = async () => {
       try {
-        if (!user?._id || !user.currentTrip) {
+        if (!user?._id) {
           if (mounted) setLoading(false);
           return;
         }
 
-        console.log('Fetching trip for currentTrip ID:', user.currentTrip);
-        const res = await fetch(`/api/trips/${user.currentTrip}`);
-        if (!res.ok) throw new Error("Failed to fetch trip");
+        // Get driver's current trip (where they are the driver)
+        const res = await fetch(`/api/driver/current-trip?userId=${user?._id}`);
+        if (!res.ok) {
+          if (mounted) setLoading(false);
+          return;
+        }
         const tripData = await res.json();
         
         if (mounted) {
-          setBooking(tripData);
+          setTrip(tripData);
           if (tripData?.status) setTripStatus(tripData.status);
           else setTripStatus("waiting");
 
           const interval = setInterval(() => {
+              console.log("LOGGING "+mapRef.current)
+
             if (mapRef.current && (window as any).google) {
               clearInterval(interval);
-              console.log("HERE", tripData)
 
               const map = new google.maps.Map(mapRef.current, {
                 zoom: 14,
               });
+
+              console.log("LOGGING "+tripData)
 
               const directionsService = new google.maps.DirectionsService();
               directionsRendererRef.current = new google.maps.DirectionsRenderer();
@@ -96,18 +96,18 @@ export default function TripPage() {
     return () => {
       mounted = false;
     };
-  }, [user?._id, user?.currentTrip]);
+  }, [user?._id]);
 
-  // Auto-refresh trip data every 5 seconds to check for driver assignment
+  // Auto-refresh trip data every 5 seconds
   useEffect(() => {
-    if (!user?.currentTrip) return;
+    if (!user?._id) return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/trips/${user.currentTrip}`);
+        const res = await fetch(`/api/driver/current-trip?userId=${user?._id}`);
         if (res.ok) {
           const tripData = await res.json();
-          setBooking(tripData);
+          setTrip(tripData);
           if (tripData?.status) setTripStatus(tripData.status);
         }
       } catch (error) {
@@ -116,29 +116,13 @@ export default function TripPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [user?.currentTrip]);
-
-  // Derived trip object (keeps existing fields/UI intact)
-  const trip = booking
-    ? {
-        id: booking._id || "N/A",
-        driver: booking.driverId && booking.driverId !== "unassigned" ? "Driver Assigned" : "Waiting for Driver",
-        driverRating: 4.8,
-        vehicle: booking.rideType === "premium" ? "Premium Vehicle" : 
-                booking.rideType === "xl" ? "XL Vehicle" : 
-                "Standard Vehicle",
-        pickup: booking.pickup,
-        dropoff: booking.dropoff,
-        fare: booking.fare ?? 0,
-        eta: 3,
-      }
-    : null;
+  }, [user?._id]);
 
   async function markPickedUp() {
-    if (!booking) return;
+    if (!trip) return;
     
     try {
-      const res = await fetch(`/api/trips/${booking._id}`, {
+      const res = await fetch(`/api/trips/${trip._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "picked_up" }),
@@ -154,10 +138,10 @@ export default function TripPage() {
   }
 
   async function completeTrip() {
-    if (!booking) return;
+    if (!trip) return;
     
     try {
-      const res = await fetch(`/api/trips/${booking._id}`, {
+      const res = await fetch(`/api/trips/${trip._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed" }),
@@ -168,63 +152,15 @@ export default function TripPage() {
       setTripStatus("completed");
       
       // Show success message
-      alert("Trip completed successfully! It has been added to your trip history.");
+      alert("Trip completed successfully! It has been added to your drive history.");
+      
+      // Redirect back to driver portal after a delay
+      setTimeout(() => {
+        window.location.href = "/driver_portal";
+      }, 2000);
     } catch (error) {
       console.error("Error completing trip:", error);
       alert("Failed to complete trip. Please try again.");
-    }
-  }
-
-  async function handleReviewSubmit(rating: number, comment: string) {
-    if (!trip) return;
-    
-    setSubmittingReview(true);
-    try {
-      // For demo purposes, use a placeholder driver ID
-      // In production, this would come from the booking/trip data
-      const driverId = booking?.driverId || "demo-driver-123";
-      
-      const res = await fetch(`/api/users/${driverId}/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rating,
-          comment,
-          tripId: trip.id,
-          userId: user?._id || "anonymous",
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to submit review");
-      }
-
-      const data = await res.json();
-      console.log("Review submitted successfully:", data);
-      
-      // Success!
-      setShowReviewModal(false);
-      
-      // Show beautiful success message
-      const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl animate-fadeIn z-50 font-bold';
-      successDiv.innerHTML = '🌟 Thank you for your review!';
-      document.body.appendChild(successDiv);
-      setTimeout(() => successDiv.remove(), 3000);
-      
-    } catch (error) {
-      console.error("Review error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit review. Please try again.";
-      
-      // Show error message
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl animate-fadeIn z-50 font-bold';
-      errorDiv.innerHTML = `❌ ${errorMessage}`;
-      document.body.appendChild(errorDiv);
-      setTimeout(() => errorDiv.remove(), 4000);
-    } finally {
-      setSubmittingReview(false);
     }
   }
 
@@ -244,15 +180,12 @@ export default function TripPage() {
         <div className="min-h-screen flex items-center justify-center text-gray-500">
           <div className="text-center">
             <p>No active trip found.</p>
-            <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p>
-            <p className="text-xs mt-1 text-gray-400">
-              {!user?.currentTrip ? 'No currentTrip set for this user' : 'Failed to load trip data'}
-            </p>
+            <p className="text-sm mt-2">You don't have any active trips as a driver.</p>
             <button 
-              onClick={() => window.location.reload()}
+              onClick={() => window.location.href = "/driver_portal"}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Refresh Page
+              Back to Driver Portal
             </button>
           </div>
         </div>
@@ -267,12 +200,12 @@ export default function TripPage() {
         <header className="sticky top-0 z-10 glass-strong border-b border-white/30 shadow-lg">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white grid place-items-center font-bold shadow-lg animate-float">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white grid place-items-center font-bold shadow-lg animate-float">
                 🚗
               </div>
               <div>
-                <span className="font-bold text-lg gradient-text-blue">Your Trip</span>
-                <p className="text-xs text-gray-600">Track your ride in real-time</p>
+                <span className="font-bold text-lg gradient-text-blue">Driver Trip</span>
+                <p className="text-xs text-gray-600">Track your drive in real-time</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -288,7 +221,7 @@ export default function TripPage() {
                     d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                   />
                 </svg>
-                <span>Chat with Driver</span>
+                <span>Chat with Rider</span>
               </button>
             </div>
           </div>
@@ -332,23 +265,23 @@ export default function TripPage() {
               </div>
 
               <h1 className="text-3xl font-bold mb-3 gradient-text-blue">
-                {tripStatus === "waiting" && "Driver is on the way"}
+                {tripStatus === "waiting" && "Pick up the rider"}
                 {tripStatus === "picked_up" && "Trip in progress"}
                 {tripStatus === "completed" && "Trip completed"}
               </h1>
 
               <p className="text-lg text-gray-600 font-medium">
-                {tripStatus === "waiting" && `⏱️ ETA: ${trip.eta} minutes`}
-                {tripStatus === "picked_up" && "🚗 Enjoy your ride!"}
-                {tripStatus === "completed" && "✨ Thank you for using RideShare!"}
+                {tripStatus === "waiting" && "🚗 Head to pickup location"}
+                {tripStatus === "picked_up" && "🚗 Drive safely to destination"}
+                {tripStatus === "completed" && "✨ Thank you for driving with RideShare!"}
               </p>
             </div>
 
-            {/* Driver Info - Enhanced */}
-            <div className="relative overflow-hidden rounded-2xl p-5 mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-100">
+            {/* Rider Info - Enhanced */}
+            <div className="relative overflow-hidden rounded-2xl p-5 mb-6 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-100">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -358,24 +291,13 @@ export default function TripPage() {
                       />
                     </svg>
                   </div>
-                  {trip.driver !== "Waiting for Driver" && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
-                  )}
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-400 rounded-full border-2 border-white"></div>
                 </div>
                 <div className="flex-1">
-                  <div className="font-bold text-lg text-gray-800">{trip.driver}</div>
-                  <div className="text-sm text-gray-600 font-medium">{trip.vehicle}</div>
-                  {trip.driver !== "Waiting for Driver" ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <svg className="w-5 h-5 text-yellow-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span className="text-sm font-bold text-gray-800">{trip.driverRating}</span>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500 mt-1">
-                      We're looking for a driver for your ride...
-                    </div>
+                  <div className="font-bold text-lg text-gray-800">{trip.riderName || "Rider"}</div>
+                  <div className="text-sm text-gray-600 font-medium">Passenger</div>
+                  {trip.riderPhone && (
+                    <div className="text-sm text-gray-500 mt-1">📞 {trip.riderPhone}</div>
                   )}
                 </div>
               </div>
@@ -418,17 +340,17 @@ export default function TripPage() {
               {tripStatus === "waiting" && (
                 <button
                   onClick={markPickedUp}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Mark as Picked Up (Demo)
+                  ✓ Mark as Picked Up
                 </button>
               )}
               {tripStatus === "picked_up" && (
                 <button
                   onClick={completeTrip}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Complete Trip (Demo)
+                  ✓ Complete Trip
                 </button>
               )}
               {tripStatus === "completed" && (
@@ -439,18 +361,12 @@ export default function TripPage() {
                   <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-3xl p-6 border-2 border-green-200 shadow-lg">
                     <div className="flex justify-between items-center">
                       <div>
-                        <div className="text-sm text-gray-600 font-medium">Total Fare</div>
+                        <div className="text-sm text-gray-600 font-medium">Your Earnings</div>
                         <div className="text-3xl font-bold text-green-700">${trip.fare.toFixed(2)}</div>
                       </div>
                       <div className="text-5xl">💰</div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setShowReviewModal(true)}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
-                  >
-                    ⭐ Rate & Review Driver
-                  </button>
                 </div>
               )}
             </div>
@@ -467,20 +383,15 @@ export default function TripPage() {
             <div className="space-y-4">
               <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
                 <span className="text-gray-600 font-medium">Trip ID</span>
-                <span className="font-mono font-bold text-gray-800">{trip.id.slice(-8)}</span>
+                <span className="font-mono font-bold text-gray-800">{trip._id.slice(-8)}</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                <span className="text-gray-600 font-medium">Estimated Fare</span>
+                <span className="text-gray-600 font-medium">Your Earnings</span>
                 <span className="font-bold text-lg gradient-text-blue">${trip.fare.toFixed(2)} AUD</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                <span className="text-gray-600 font-medium">Payment Method</span>
-                <span className="font-semibold text-gray-800 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                  Card •••• 1234
-                </span>
+                <span className="text-gray-600 font-medium">Status</span>
+                <span className="font-semibold text-gray-800 capitalize">{tripStatus}</span>
               </div>
             </div>
           </div>
@@ -489,21 +400,9 @@ export default function TripPage() {
         <Chat
           isOpen={showChat}
           onClose={() => setShowChat(false)}
-          riderName="You"
-          driverName={trip.driver}
-          role="rider"
-        />
-
-        <ReviewModal
-          isOpen={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
-          onSubmit={handleReviewSubmit}
-          driverName={trip.driver}
-          tripDetails={{
-            pickup: trip.pickup,
-            dropoff: trip.dropoff,
-            fare: trip.fare,
-          }}
+          riderName={trip.riderName || "Rider"}
+          driverName="You"
+          role="driver"
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-center">

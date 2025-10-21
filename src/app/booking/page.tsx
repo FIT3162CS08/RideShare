@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 import StripePayment from "@/component/StripePayment";
 
 export default function RideShareBooking() {
-  const { user, pickup: pickupContext, dropoff: dropoffContext } = useUser();
+  const { user, pickup: pickupContext, dropoff: dropoffContext, refreshUser } = useUser();
 
   const [pickup, setPickup] = useState(pickupContext ? pickupContext.formatted_address || "" : "");
   const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(pickupContext || null);
@@ -179,6 +179,9 @@ export default function RideShareBooking() {
       }
       const data = await res.json();
       const newTripId = data.tripId;
+      
+      // Refresh user context to get updated currentTrip
+      await refreshUser();
       
       if (newTripId) {
         setTripId(newTripId);

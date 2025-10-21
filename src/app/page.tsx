@@ -5,9 +5,106 @@ import Image from "next/image";
 import { useUser } from "@/context/UserContext";
 import Loading from "@/component/Loading";
 import AutocompleteInput from "@/component/AutocompleteInput";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useSocket from "./../socket/useSocket";
+
+type Trip = {
+  _id: string;
+  pickup: string;
+  dropoff: string;
+  fare: number;
+  status: string;
+  createdAt: string;
+  driverId?: string;
+  riderId?: string;
+};
+
+function TripHistorySection() {
+  const { user } = useUser();
+  const [tripHistory, setTripHistory] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchTripHistory();
+    }
+  }, [user?._id]);
+
+  const fetchTripHistory = async () => {
+    try {
+      const res = await fetch(`/api/users/${user?._id}/trip-history`);
+      if (res.ok) {
+        const data = await res.json();
+        setTripHistory(data.tripHistory || []);
+      }
+    } catch (error) {
+      console.error("Error fetching trip history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="glass-strong rounded-3xl p-8 shadow-2xl border border-white/30 animate-slideInUp">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold gradient-text-blue flex items-center gap-3">
+          <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Recent Trips
+        </h2>
+        <Link href="/trip" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+          View All →
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : tripHistory.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p className="text-gray-500">No trips yet</p>
+          <p className="text-sm text-gray-400 mt-1">Your trip history will appear here</p>
+        </div>
+      ) : (
+        <div className="space-y-4 max-h-64 overflow-y-auto">
+          {tripHistory.slice(0, 5).map((trip) => (
+            <div key={trip._id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-4">
+                <div className={`w-3 h-3 rounded-full ${
+                  trip.status === "completed" ? "bg-green-500" :
+                  trip.status === "picked_up" ? "bg-blue-500" :
+                  "bg-yellow-500"
+                }`}></div>
+                <div>
+                  <div className="font-medium text-gray-800 text-sm">
+                    {trip.pickup} → {trip.dropoff}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(trip.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-green-600">${trip.fare.toFixed(2)}</div>
+                <div className="text-xs text-gray-500 capitalize">{trip.status}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { user, loading, logout, setPickupContext, setDropoffContext } = useUser();
@@ -288,6 +385,9 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Trip History Section */}
+          <TripHistorySection />
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slideInRight">

@@ -23,6 +23,9 @@ const UserSchema = new Schema(
     card: { type: Boolean, required: true, default: true },
     bookings: [{ type: Schema.Types.ObjectId, ref: "Booking" }],
     reviews: [ReviewSchema], // Array of reviews received as a driver
+    currentTrip: { type: Schema.Types.ObjectId, ref: "Trip", default: null },
+    tripHistory: [{ type: Schema.Types.ObjectId, ref: "Trip" }], // Past trips as rider
+    driveHistory: [{ type: Schema.Types.ObjectId, ref: "Trip" }], // Past trips as driver
   },
   { timestamps: true }
 );
@@ -32,4 +35,4 @@ export type User = InferSchemaType<typeof UserSchema> & { _id: string };
 export type UserType = Omit<User, "createdAt" | "updatedAt"> | null;
 
 export const UserModel: Model<User> =
-  (mongoose.models.User as Model<User>) || mongoose.model<User>("User", UserSchema);
+  (mongoose.models?.User as Model<User>) || mongoose.model<User>("User", UserSchema);
