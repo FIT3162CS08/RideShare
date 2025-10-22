@@ -11,6 +11,7 @@ import StripePayment from "@/component/StripePayment";
 export default function RideShareBooking() {
   const { user, pickup: pickupContext, dropoff: dropoffContext, refreshUser } = useUser();
 
+
   const [pickup, setPickup] = useState(pickupContext ? pickupContext.formatted_address || "" : "");
   const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(pickupContext || null);
   const [dropoff, setDropoff] = useState(dropoffContext ? dropoffContext.formatted_address || "" : "");
@@ -52,6 +53,7 @@ export default function RideShareBooking() {
 
 
   useEffect(() => {
+    refreshUser();
     const interval = setInterval(() => {
       if (mapRef.current && (window as any).google) {
         clearInterval(interval);

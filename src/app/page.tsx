@@ -21,9 +21,14 @@ type Trip = {
 };
 
 function TripHistorySection() {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
+  
   const [tripHistory, setTripHistory] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    refreshUser();
+  }, [])
 
   useEffect(() => {
     if (user?._id) {

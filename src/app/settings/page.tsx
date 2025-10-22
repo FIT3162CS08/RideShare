@@ -18,25 +18,22 @@ export default function RideShareSettings() {
   const {user, refreshUser} = useUser();
   const userData = user!
   console.log(userData)
-  if (!user) return;
+  // if (!user) return;
 
-  const [name, setSavedName] = useState(userData.name);
-  const [phone, setPhone] = useState(userData.phone);
-  const [email, setEmail] = useState(userData.email);
-  const [birthday, setBirthday] = useState(userData.birthday);
+  const [name, setSavedName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [birthday, setBirthday] = useState(user?.birthday || "");
   const [promoCode, setPromoCode] = useState("");
-  const [address, setAddress] = useState(userData.address);
+  const [address, setAddress] = useState(user?.address || "");
   const [googleLoc, setGLoc] = useState<google.maps.places.PlaceResult | null>(null);
 
-  const [notifications, setNotifications] = useState(
-    userData.pushNotifs
-  );
-  const [saveReceipts, setSaveReceipts] = useState(
-    userData.saveReceipts
-  );
+  const [notifications, setNotifications] = useState(user?.pushNotifs ?? false);
+  const [saveReceipts, setSaveReceipts] = useState(user?.saveReceipts ?? false);
   const [defaultPayment, setDefaultPayment] = useState<"card" | "cash">(
-    userData.card ? "card" : "cash"
+    user?.card ? "card" : "cash"
   );
+
 
   const [saved, setSaved] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -98,6 +95,8 @@ export default function RideShareSettings() {
       if (!res.ok) throw new Error(data.error || "Failed to update");
 
       setSaved(true);
+
+      // refreshUser();
       setTimeout(() => setSaved(false), 2000);
     } catch (err: any) {
       console.error(err);
