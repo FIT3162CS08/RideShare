@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
+import Chat from "@/component/Chat";
+
 
 type Booking = {
   _id: string;
@@ -30,16 +33,49 @@ type DriveHistory = {
 
 export default function DriverPortal() {
   const { user } = useUser();
+  console.log("user: ", user)
   const [openBookings, setOpenBookings] = useState<Booking[]>([]);
   const [driveHistory, setDriveHistory] = useState<DriveHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [online, setOnline] = useState(false);
+  const [conversation, setConversation] = useState({messages: [], convId: null});
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     fetchDriveHistory();
   }, [user]);
+
+    // userId must be fetched from page
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user) return;
+        try {
+          console.log("IDS: ", user._id, '68df43eeb62c6d544a5dcac7')
+            const res = await fetch(`/api/message?userId=${'68df43eeb62c6d544a5dcac7'}&driverId=${user._id}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+      console.log("MSG: ", msg)
+      setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation])
 
   const fetchDriveHistory = async () => {
     if (!user?._id) return;
@@ -95,6 +131,8 @@ export default function DriverPortal() {
         }),
       });
 
+      await startConversation()
+
       if (!res.ok) throw new Error("Failed to accept booking");
       
       // Remove the accepted booking from the list
@@ -110,6 +148,23 @@ export default function DriverPortal() {
       setAccepting(null);
     }
   };
+
+  async function startConversation() {
+      // Make a conversation
+      await fetch(`/api/messages/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              passenger: '68e341296877a8123bb1f261',
+              driver: user._id,
+              pickup: '35 plowman court, Epping',
+              dropoff: 'Monash Clayton',
+              date: '2004-03-10',
+          }), // current driver
+      });
+    // ['68e3422e6877a8123bb1f265', '68e341296877a8123bb1f261']
+  }
+
 
   if (loading) {
     return (
@@ -146,6 +201,22 @@ export default function DriverPortal() {
                   {openBookings.length} open booking{openBookings.length !== 1 ? 's' : ''}
                 </div>
               </div>
+            </div>
+                        <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowChat(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 font-medium shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span>Chat with Driver</span>
+              </button>
             </div>
           </div>
         </header>
@@ -314,6 +385,15 @@ export default function DriverPortal() {
             )}
           </div>
         </main>
+        <Chat
+          isOpen={showChat}
+          conversation={conversation}
+          onClose={() => setShowChat(false)}
+          riderName="XXXXXXX"
+          driverName="You"
+          role="driver"
+          user={user}
+        />
       </div>
     </ProtectedRoute>
   );

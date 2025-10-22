@@ -5,6 +5,7 @@ import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
 
 type Booking = {
   _id: string;
@@ -33,6 +34,7 @@ export default function TripPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const [driver, setDriver] = useState<any | null>(null);
+  const [conversation, setConversation] = useState({messages: [], convId: null});
 
   // Fetch the user's current trip
   useEffect(() => {
@@ -137,6 +139,37 @@ export default function TripPage() {
 
     fetchDriverInfo();
   }, [booking?.driverId]);
+
+    // Fetch messages and setup Socket
+  // DRIVER ID: 68df43eeb62c6d544a5dcac7. USER ID: 68f79222ae086705ddfd1477. 
+  // driverId must be fetched from page
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user) return;
+        try {
+            console.log("IDS: ", user._id, '68f79222ae086705ddfd1477')
+            const res = await fetch(`/api/message?userId=${user._id}&driverId=${'68f79222ae086705ddfd1477'}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+        setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation])
 
   // Derived trip object (keeps existing fields/UI intact)
   const trip = booking
@@ -532,6 +565,16 @@ export default function TripPage() {
             dropoff: trip.dropoff,
             fare: trip.fare,
           }}
+        />
+
+        <Chat
+          isOpen={showChat}
+          conversation={conversation}
+          onClose={() => setShowChat(false)}
+          riderName="You"
+          driverName="XXXXXXX"
+          role="rider"
+          user={user}
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-center">

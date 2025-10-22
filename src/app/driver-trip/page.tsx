@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
+
 
 type Trip = {
   _id: string;
@@ -21,11 +23,13 @@ type Trip = {
 export default function DriverTripPage() {
   const { user } = useUser();
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
-  const [showChat, setShowChat] = useState(false);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  
+  const [conversation, setConversation] = useState({messages: [], convId: null});
+  const [showChat, setShowChat] = useState(false);
 
   // Fetch the driver's current trip
   useEffect(() => {
@@ -98,6 +102,36 @@ export default function DriverTripPage() {
     };
   }, [user?._id]);
 
+      // userId must be fetched from page
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user) return;
+        try {
+          console.log("IDS: ", user._id, '68df43eeb62c6d544a5dcac7')
+            const res = await fetch(`/api/message?userId=${'68df43eeb62c6d544a5dcac7'}&driverId=${user._id}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+      console.log("MSG: ", msg)
+      setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation])
+
   // Auto-refresh trip data every 5 seconds
   useEffect(() => {
     if (!user?._id) return;
@@ -117,6 +151,23 @@ export default function DriverTripPage() {
 
     return () => clearInterval(interval);
   }, [user?._id]);
+
+  async function startConversation() {
+    // Make a conversation
+    await fetch(`/api/messages/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            passenger: '68e341296877a8123bb1f261',
+            driver: '68e3422e6877a8123bb1f265',
+            pickup: '35 plowman court, Epping',
+            dropoff: 'Monash Clayton',
+            date: '2004-03-10',
+        }), // current driver
+    });
+    // ['68e3422e6877a8123bb1f265', '68e341296877a8123bb1f261']
+  }
+
 
   async function markPickedUp() {
     if (!trip) return;
@@ -399,10 +450,12 @@ export default function DriverTripPage() {
 
         <Chat
           isOpen={showChat}
+          conversation={conversation}
           onClose={() => setShowChat(false)}
           riderName={trip.riderName || "Rider"}
           driverName="You"
           role="driver"
+          user={user}
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-center">

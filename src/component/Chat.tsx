@@ -1,5 +1,6 @@
 "use client";
 
+import { socket } from "@/socket/socket";
 import React, { useState, useRef, useEffect } from "react";
 
 interface Message {
@@ -17,30 +18,28 @@ interface ChatProps {
   role: "rider" | "driver";
 }
 
-const Chat: React.FC<ChatProps> = ({ isOpen, onClose, riderName, driverName, role }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: `Hi ${role === "rider" ? driverName : riderName}! I'm on my way to the pickup location.`,
-      sender: role === "rider" ? "driver" : "rider",
-      timestamp: new Date(Date.now() - 300000), // 5 minutes ago
-    },
-    {
-      id: "2",
-      text: "Thanks! I'll be waiting at the main entrance.",
-      sender: role,
-      timestamp: new Date(Date.now() - 240000), // 4 minutes ago
-    },
-    {
-      id: "3",
-      text: "Perfect! I should be there in about 3 minutes. Look for a blue sedan.",
-      sender: role === "rider" ? "driver" : "rider",
-      timestamp: new Date(Date.now() - 120000), // 2 minutes ago
-    },
-  ]);
+function formatMessageTimestamp(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
+
+const Chat: React.FC<ChatProps> = ({ isOpen, conversation, onClose, riderName, driverName, role, user }) => {
+  const [messages, setMessages] = useState<Message[]>(conversation ? conversation.messages : []);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  let receiverId = null
+  if (messages && messages.length !== 0 && user) {
+    receiverId = user._id == messages[0].senderId ? messages[0].receiverId : messages[0].senderId
+  }
+
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,39 +49,27 @@ const Chat: React.FC<ChatProps> = ({ isOpen, onClose, riderName, driverName, rol
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  useEffect(() => {
+    setMessages(conversation ? conversation.messages : messages)
+  }, [conversation])
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!newMessage.trim()) return;
+    if (!user && !conversation && !conversation.convId && receiverId) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      text: newMessage.trim(),
-      sender: role,
-      timestamp: new Date(),
-    };
-
-    setMessages([...messages, message]);
+    socket.emit("message", {
+        conversationId: conversation.conversationId,
+        senderId: user._id,
+        receiverId: receiverId,
+        newMessage,
+    });
     setNewMessage("");
 
-    // Simulate response from the other party
-    setTimeout(() => {
-      const responses = [
-        "Got it, thanks!",
-        "I'll be there shortly.",
-        "Sounds good!",
-        "No problem.",
-        "I'm running a bit late, will be there in 5 minutes.",
-        "I'm here! Look for me near the entrance.",
-      ];
-      const response: Message = {
-        id: (Date.now() + 1).toString(),
-        text: responses[Math.floor(Math.random() * responses.length)],
-        sender: role === "rider" ? "driver" : "rider",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, response]);
-    }, 1000 + Math.random() * 2000);
+    return;
   };
+
 
   if (!isOpen) return null;
 
@@ -124,33 +111,35 @@ const Chat: React.FC<ChatProps> = ({ isOpen, onClose, riderName, driverName, rol
 
         {/* Messages with beautiful styling */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white">
-          {messages.map((message, index) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === role ? "justify-end" : "justify-start"} animate-fadeIn`}
-              style={{animationDelay: `${index * 0.05}s`}}
-            >
+          {(messages||[]).map((message, index) => 
+            (
               <div
-                className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg transform hover:scale-105 transition-all ${
-                  message.sender === role
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-sm"
-                    : "bg-white text-gray-900 border border-gray-200 rounded-bl-sm"
-                }`}
+                key={message._id}
+                className={`flex ${message.senderId === user._id ? "justify-end" : "justify-start"} animate-fadeIn`}
+                style={{animationDelay: `${index * 0.05}s`}}
               >
-                <p className="text-sm leading-relaxed">{message.text}</p>
-                <p className={`text-xs mt-1 flex items-center gap-1 ${
-                  message.sender === role ? "text-white/70" : "text-gray-500"
-                }`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  {message.sender === role && (
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                    </svg>
-                  )}
-                </p>
+                <div
+                  className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg transform hover:scale-105 transition-all ${
+                    message.senderId === user._id
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-sm"
+                      : "bg-white text-gray-900 border border-gray-200 rounded-bl-sm"
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.message}</p>
+                  <p className={`text-xs mt-1 flex items-center gap-1 ${
+                    message.senderId === user._id ? "text-white/70" : "text-gray-500"
+                  }`}>
+                    {formatMessageTimestamp(message.createdAt)}
+                    {message.senderId === user._id && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                      </svg>
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
           <div ref={messagesEndRef} />
         </div>
 
