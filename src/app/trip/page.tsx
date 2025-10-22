@@ -573,7 +573,7 @@ export default function TripPage() {
           conversation={conversation}
           onClose={() => setShowChat(false)}
           riderName="You"
-          driverName="XXXXXXX"
+          driverName={driver?.name || "XXXXXXX"}
           role="rider"
           user={user}
         />

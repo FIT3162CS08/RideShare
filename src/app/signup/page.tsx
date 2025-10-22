@@ -151,7 +151,7 @@ export default function Signup() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
               <input
                 type="text"
-                placeholder="+61 xxx xxx xxx"
+                placeholder="e.g. 0400000000"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
@@ -164,7 +164,7 @@ export default function Signup() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <input
               type="email"
-              placeholder="your.email@example.com"
+              placeholder="email@student.monash.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
