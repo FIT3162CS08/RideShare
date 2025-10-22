@@ -32,6 +32,7 @@ export default function TripPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const [driver, setDriver] = useState<any | null>(null);
 
   // Fetch the user's current trip
   useEffect(() => {
@@ -48,6 +49,8 @@ export default function TripPage() {
         if (!res.ok) throw new Error("Failed to fetch trip");
         const tripData = await res.json();
         
+        console.log("CURRENT TRIP" + tripData)
+
         if (mounted) {
           setBooking(tripData);
           if (tripData?.status) setTripStatus(tripData.status);
@@ -118,21 +121,46 @@ export default function TripPage() {
     return () => clearInterval(interval);
   }, [user?.currentTrip]);
 
+  useEffect(() => {
+    const fetchDriverInfo = async () => {
+      if (!booking?.driverId || booking.driverId === "unassigned") return;
+
+      try {
+        const res = await fetch(`/api/users/${booking.driverId}`);
+        if (!res.ok) throw new Error("Failed to fetch driver info");
+        const driverData = await res.json();
+        setDriver(driverData);
+      } catch (err) {
+        console.error("Error fetching driver info:", err);
+      }
+    };
+
+    fetchDriverInfo();
+  }, [booking?.driverId]);
+
   // Derived trip object (keeps existing fields/UI intact)
   const trip = booking
-    ? {
-        id: booking._id || "N/A",
-        driver: booking.driverId && booking.driverId !== "unassigned" ? "Driver Assigned" : "Waiting for Driver",
-        driverRating: 4.8,
-        vehicle: booking.rideType === "premium" ? "Premium Vehicle" : 
-                booking.rideType === "xl" ? "XL Vehicle" : 
-                "Standard Vehicle",
-        pickup: booking.pickup,
-        dropoff: booking.dropoff,
-        fare: booking.fare ?? 0,
-        eta: 3,
-      }
-    : null;
+  ? {
+      id: booking._id || "N/A",
+      driver: driver
+        ? driver.name
+        : booking.driverId && booking.driverId !== "unassigned"
+          ? "Driver Assigned"
+          : "Waiting for Driver",
+      driverPhone: driver?.phone || null,
+      driverRating: driver?.rating || 4.8,
+      vehicle:
+        driver?.vehicle ||
+        (booking.rideType === "premium"
+          ? "Premium Vehicle"
+          : booking.rideType === "xl"
+          ? "XL Vehicle"
+          : "Standard Vehicle"),
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      fare: booking.fare ?? 0,
+      eta: 3,
+    } : null;
 
   async function markPickedUp() {
     if (!booking) return;
