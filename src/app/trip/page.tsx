@@ -146,7 +146,7 @@ export default function TripPage() {
   console.log("IDS: ", user && user._id, driver)
   useEffect(() => {
     const fetchMessages = async () => {
-        if (!user && !trip) return;
+        if (!user && !trip && !driver) return;
         try {
             console.log("IDS: ", user._id, driver)
             const res = await fetch(`/api/message?userId=${user._id}&driverId=${driver.id}`);
