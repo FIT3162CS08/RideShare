@@ -4,10 +4,13 @@ import { socket } from "@/socket/socket";
 import React, { useState, useRef, useEffect } from "react";
 
 interface Message {
-  id: string;
+  _id: string;
+  senderId: string;
+  receiverId: string;
   text: string;
   sender: "rider" | "driver";
   timestamp: Date;
+  createdAt?: string;
 }
 
 interface ChatProps {
@@ -16,6 +19,14 @@ interface ChatProps {
   riderName: string;
   driverName: string;
   role: "rider" | "driver";
+  conversation?: {
+    messages: Message[];
+    convId: string | null;
+  } | null;
+  user?: {
+    _id: string;
+    name: string;
+  } | null;
 }
 
 function formatMessageTimestamp(isoString) {
