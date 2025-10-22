@@ -393,13 +393,13 @@ export default function TripPage() {
               </div>
 
               <h1 className="text-3xl font-bold mb-3 gradient-text-blue">
-                {tripStatus === "waiting" && "Driver is on the way"}
+                {tripStatus === "waiting" && "Finding a driver"}
                 {tripStatus === "picked_up" && "Trip in progress"}
                 {tripStatus === "completed" && "Trip completed"}
               </h1>
 
               <p className="text-lg text-gray-600 font-medium">
-                {tripStatus === "waiting" && `⏱️ ETA: ${trip.eta} minutes`}
+                {tripStatus === "waiting" && `⏱️ Hold on tight`}
                 {tripStatus === "picked_up" && "🚗 Enjoy your ride!"}
                 {tripStatus === "completed" && "✨ Thank you for using RideShare!"}
               </p>
@@ -481,7 +481,7 @@ export default function TripPage() {
                   onClick={markPickedUp}
                   className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Mark as Picked Up (Demo)
+                  ✓ Mark as Picked Up
                 </button>
               )}
               {tripStatus === "picked_up" && (
@@ -489,7 +489,7 @@ export default function TripPage() {
                   onClick={completeTrip}
                   className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Complete Trip (Demo)
+                  ✓ Complete Trip
                 </button>
               )}
               {tripStatus === "completed" && (
