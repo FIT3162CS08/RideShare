@@ -5,7 +5,6 @@ import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
-import { socket } from "@/socket/socket";
 
 type Booking = {
   _id: string;
@@ -23,31 +22,6 @@ type Booking = {
   driverId?: string;
 };
 
-const tripp = {
-    id: "RS-ABC123",
-    driver: "John D.",
-    driverRating: 4.8,
-    vehicle: "Blue Toyota Camry - ABC123",
-    pickup: {
-      formatted_address: "26 Sir John Monash Dr, Caulfield East VIC 3145, Australia",
-      location: {
-        lat: -37.8774408,
-        lng: 145.0435147
-      },
-      place_id: "ChIJzdMzrIxp1moRlxwupvPUt94",
-    },
-    dropoff: {
-      formatted_address: "14 Innovation Walk, Clayton VIC 3168, Australia",
-      location: {
-          "lat": -37.9103577,
-          "lng": 145.13009
-      },
-      place_id: "Ei8xNCBJbm5vdmF0aW9uIFdhbGssIENsYXl0b24gVklDIDMxNjgsIEF1c3RyYWxpYSIwEi4KFAoSCY0bOiTJatZqETmYbG1kGa_GEA4qFAoSCVFqpiPJatZqEXhD6l2H9fCT",
-    },
-    fare: 23.75,
-    eta: 3
-};
-
 export default function TripPage() {
   const { user } = useUser();
   const [tripStatus, setTripStatus] = useState<"waiting" | "picked_up" | "completed">("waiting");
@@ -58,29 +32,37 @@ export default function TripPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
-  const [conversation, setConversation] = useState({messages: [], convId: null});
+  const [driver, setDriver] = useState<any | null>(null);
 
-  // Fetch the user's open booking
+  // Fetch the user's current trip
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    const fetchTripData = async () => {
       try {
-        const res = await fetch("/api/bookings");
-        if (!res.ok) throw new Error("Failed to fetch bookings");
-        const data: Booking[] = await res.json();
-        const openBooking = data.find((b) => b.open);
+        if (!user?._id || !user.currentTrip) {
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        console.log('Fetching trip for currentTrip ID:', user.currentTrip);
+        const res = await fetch(`/api/trips/${user.currentTrip}`);
+        if (!res.ok) throw new Error("Failed to fetch trip");
+        const tripData = await res.json();
+        
+        console.log("CURRENT TRIP" + tripData)
+
         if (mounted) {
-          setBooking(openBooking ?? null);
-          // if (openBooking?.status) setTripStatus(openBooking.status);
-          if (openBooking?.status) setTripStatus("waiting");
+          setBooking(tripData);
+          if (tripData?.status) setTripStatus(tripData.status);
+          else setTripStatus("waiting");
 
           const interval = setInterval(() => {
             if (mapRef.current && (window as any).google) {
               clearInterval(interval);
+              console.log("HERE", tripData)
 
               const map = new google.maps.Map(mapRef.current, {
                 zoom: 14,
-                // center: trip.pickup,
               });
 
               const directionsService = new google.maps.DirectionsService();
@@ -89,8 +71,8 @@ export default function TripPage() {
 
               directionsService.route(
                 {
-                  origin: openBooking!.pickup,
-                  destination: openBooking!.dropoff,
+                  origin: tripData.pickup,
+                  destination: tripData.dropoff,
                   travelMode: google.maps.TravelMode.DRIVING,
                 },
                 (result, status) => {
@@ -111,32 +93,114 @@ export default function TripPage() {
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
+    };
+
+    fetchTripData();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [user?._id, user?.currentTrip]);
+
+  // Auto-refresh trip data every 5 seconds to check for driver assignment
+  useEffect(() => {
+    if (!user?.currentTrip) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/trips/${user.currentTrip}`);
+        if (res.ok) {
+          const tripData = await res.json();
+          setBooking(tripData);
+          if (tripData?.status) setTripStatus(tripData.status);
+        }
+      } catch (error) {
+        console.error("Error refreshing trip data:", error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [user?.currentTrip]);
+
+  useEffect(() => {
+    const fetchDriverInfo = async () => {
+      if (!booking?.driverId || booking.driverId === "unassigned") return;
+
+      try {
+        const res = await fetch(`/api/users/${booking.driverId}`);
+        if (!res.ok) throw new Error("Failed to fetch driver info");
+        const driverData = await res.json();
+        setDriver(driverData);
+      } catch (err) {
+        console.error("Error fetching driver info:", err);
+      }
+    };
+
+    fetchDriverInfo();
+  }, [booking?.driverId]);
 
   // Derived trip object (keeps existing fields/UI intact)
   const trip = booking
-    ? {
-        id: booking._id || "N/A",
-        driver: tripp.driver || "John D.",
-        driverRating: tripp.driverRating ?? 4.8,
-        vehicle: booking.rideType || "Blue Toyota Camry - ABC123",
-        pickup: booking.pickup,
-        dropoff: booking.dropoff,
-        fare: booking.fare ?? 0,
-        eta: booking.time ?? 3,
-      }
-    : null;
+  ? {
+      id: booking._id || "N/A",
+      driver: driver
+        ? driver.name
+        : booking.driverId && booking.driverId !== "unassigned"
+          ? "Driver Assigned"
+          : "Waiting for Driver",
+      driverPhone: driver?.phone || null,
+      driverRating: driver?.rating || 4.8,
+      vehicle:
+        driver?.vehicle ||
+        (booking.rideType === "premium"
+          ? "Premium Vehicle"
+          : booking.rideType === "xl"
+          ? "XL Vehicle"
+          : "Standard Vehicle"),
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      fare: booking.fare ?? 0,
+      eta: 3,
+    } : null;
 
-  function markPickedUp() {
-    setTripStatus("picked_up");
+  async function markPickedUp() {
+    if (!booking) return;
+    
+    try {
+      const res = await fetch(`/api/trips/${booking._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "picked_up" }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to update trip status");
+      
+      setTripStatus("picked_up");
+    } catch (error) {
+      console.error("Error updating trip status:", error);
+      alert("Failed to update trip status. Please try again.");
+    }
   }
 
-  function completeTrip() {
-    setTripStatus("completed");
+  async function completeTrip() {
+    if (!booking) return;
+    
+    try {
+      const res = await fetch(`/api/trips/${booking._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to complete trip");
+      
+      setTripStatus("completed");
+      
+      // Show success message
+      alert("Trip completed successfully! It has been added to your trip history.");
+    } catch (error) {
+      console.error("Error completing trip:", error);
+      alert("Failed to complete trip. Please try again.");
+    }
   }
 
   async function handleReviewSubmit(rating: number, comment: string) {
@@ -165,6 +229,7 @@ export default function TripPage() {
       }
 
       const data = await res.json();
+      console.log("Review submitted successfully:", data);
       
       // Success!
       setShowReviewModal(false);
@@ -191,79 +256,33 @@ export default function TripPage() {
     }
   }
 
-  // Initialize map when trip data is ready
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     if (mapRef.current && (window as any).google) {
-  //       clearInterval(interval);
-
-  //       const map = new google.maps.Map(mapRef.current, {
-  //         zoom: 14,
-  //         // center: trip.pickup,
-  //       });
-
-  //       const directionsService = new google.maps.DirectionsService();
-  //       directionsRendererRef.current = new google.maps.DirectionsRenderer();
-  //       directionsRendererRef.current.setMap(map);
-
-  //       directionsService.route(
-  //         {
-  //           origin: trip!.pickup,
-  //           destination: trip!.dropoff,
-  //           travelMode: google.maps.TravelMode.DRIVING,
-  //         },
-  //         (result, status) => {
-  //           if (status === "OK" && result) {
-  //             directionsRendererRef.current?.setDirections(result);
-  //           } else {
-  //             console.error("Directions request failed:", status);
-  //           }
-  //         }
-  //       );
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(interval);
-  // }, []);
-  
-
-  // Fetch messages and setup Socket
-  // DRIVER ID: 68df43eeb62c6d544a5dcac7. USER ID: 68f79222ae086705ddfd1477. 
-  // driverId must be fetched from page
-  useEffect(() => {
-    const fetchMessages = async () => {
-        if (!user) return;
-        try {
-            console.log("IDS: ", user._id, '68f79222ae086705ddfd1477')
-            const res = await fetch(`/api/message?userId=${user._id}&driverId=${'68f79222ae086705ddfd1477'}`);
-            const conversations = await res.json();
-            setConversation(conversations);
-        } catch (err) {
-            console.log("❌ Error fetching messages:", err);
-        }
-    };
-    fetchMessages();
-
-    // Listen for new messages        !!! Remove returning conversationId
-    socket.on("newMessage", ({ msg, conversationId }) => {
-        setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
-    });
-
-    if (user) {
-        socket.emit("join", user._id);
-    }
-
-    return () => {
-        socket.off("newMessage");
-    };
-  }, [user, setConversation])
-
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen flex items-center justify-center text-gray-500">
+          Loading your trip...
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   if (!trip) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen flex items-center justify-center text-gray-500">
-          Loading your trip...
+          <div className="text-center">
+            <p>No active trip found.</p>
+            <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p>
+            <p className="text-xs mt-1 text-gray-400">
+              {!user?.currentTrip ? 'No currentTrip set for this user' : 'Failed to load trip data'}
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Refresh Page
+            </button>
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -367,23 +386,29 @@ export default function TripPage() {
                       />
                     </svg>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+                  {trip.driver !== "Waiting for Driver" && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-lg text-gray-800">{trip.driver}</div>
                   <div className="text-sm text-gray-600 font-medium">{trip.vehicle}</div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <svg className="w-5 h-5 text-yellow-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-bold text-gray-800">{trip.driverRating}</span>
-                  </div>
+                  {trip.driver !== "Waiting for Driver" ? (
+                    <div className="flex items-center gap-1 mt-1">
+                      <svg className="w-5 h-5 text-yellow-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span className="text-sm font-bold text-gray-800">{trip.driverRating}</span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 mt-1">
+                      We're looking for a driver for your ride...
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Pickup/Dropoff + Map + Actions + Summary remain identical */}
-            {/* ...same UI code as before... */}
             {/* Trip Details - Enhanced */}
             <div className="space-y-4 mb-6">
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -448,22 +473,12 @@ export default function TripPage() {
                       <div className="text-5xl">💰</div>
                     </div>
                   </div>
-                  
-                  {/* Only show review button if a driver was assigned */}
-                  {booking?.driverId && booking.driverId !== "unassigned" ? (
-                    <button 
-                      onClick={() => setShowReviewModal(true)}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
-                    >
-                      ⭐ Rate & Review Driver
-                    </button>
-                  ) : (
-                    <div className="text-center p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
-                      <p className="text-gray-600 font-medium">
-                        No driver was assigned to this trip
-                      </p>
-                    </div>
-                  )}
+                  <button 
+                    onClick={() => setShowReviewModal(true)}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl animate-shimmer relative overflow-hidden"
+                  >
+                    ⭐ Rate & Review Driver
+                  </button>
                 </div>
               )}
             </div>
@@ -501,12 +516,10 @@ export default function TripPage() {
 
         <Chat
           isOpen={showChat}
-          conversation={conversation}
           onClose={() => setShowChat(false)}
           riderName="You"
-          driverName="XXXXXXX"
+          driverName={trip.driver}
           role="rider"
-          user={user}
         />
 
         <ReviewModal
@@ -519,7 +532,6 @@ export default function TripPage() {
             dropoff: trip.dropoff,
             fare: trip.fare,
           }}
-          loading={submittingReview}
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-center">
