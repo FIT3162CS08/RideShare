@@ -143,12 +143,13 @@ export default function TripPage() {
     // Fetch messages and setup Socket
   // DRIVER ID: 68df43eeb62c6d544a5dcac7. USER ID: 68f79222ae086705ddfd1477. 
   // driverId must be fetched from page
+  console.log("IDS: ", user && user._id, driver)
   useEffect(() => {
     const fetchMessages = async () => {
-        if (!user) return;
+        if (!user && !trip) return;
         try {
-            console.log("IDS: ", user._id, '68f79222ae086705ddfd1477')
-            const res = await fetch(`/api/message?userId=${user._id}&driverId=${'68f79222ae086705ddfd1477'}`);
+            console.log("IDS: ", user._id, driver)
+            const res = await fetch(`/api/message?userId=${user._id}&driverId=${driver.id}`);
             const conversations = await res.json();
             setConversation(conversations);
         } catch (err) {
@@ -169,7 +170,7 @@ export default function TripPage() {
     return () => {
         socket.off("newMessage");
     };
-  }, [user, setConversation])
+  }, [user, setConversation, driver])
 
   // Derived trip object (keeps existing fields/UI intact)
   const trip = booking

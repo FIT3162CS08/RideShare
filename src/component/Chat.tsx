@@ -44,6 +44,7 @@ const Chat: React.FC<ChatProps> = ({ isOpen, conversation, onClose, riderName, d
   const [messages, setMessages] = useState<Message[]>(conversation ? conversation.messages : []);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  console.log(conversation)
 
   let receiverId = null
   if (messages && messages.length !== 0 && user) {

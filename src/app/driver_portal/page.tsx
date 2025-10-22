@@ -43,6 +43,10 @@ export default function DriverPortal() {
   const [conversation, setConversation] = useState({messages: [], convId: null});
   const [showChat, setShowChat] = useState(false);
 
+  console.log(
+    "openBookings: ", openBookings.length > 0 ? openBookings[0] : []
+  )
+
 
 
   // // userId must be fetched from page
@@ -163,7 +167,7 @@ export default function DriverPortal() {
         }),
       });
 
-      await startConversation()
+      await startConversation(bookingId);
 
       if (!res.ok) throw new Error("Failed to accept booking");
       
@@ -181,17 +185,20 @@ export default function DriverPortal() {
     }
   };
 
-  async function startConversation() {
+  async function startConversation(bookingId) {
+      const currBooking = openBookings.filter(bk => bk._id === bookingId)[0]
+      console.log(currBooking.userId)
+
       // Make a conversation
       await fetch(`/api/messages/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-              passenger: '68e341296877a8123bb1f261',
+              passenger: currBooking.userId,
               driver: user._id,
-              pickup: '35 plowman court, Epping',
-              dropoff: 'Monash Clayton',
-              date: '2004-03-10',
+              pickup: currBooking.pickup,
+              dropoff: currBooking.dropoff,
+              date: currBooking.createdAt,
           }), // current driver
       });
     // ['68e3422e6877a8123bb1f265', '68e341296877a8123bb1f261']
@@ -419,15 +426,17 @@ export default function DriverPortal() {
           </div>
         </main>
 
-        <Chat
-          isOpen={showChat}
-          conversation={conversation}
-          onClose={() => setShowChat(false)}
-          riderName="XXXXXXX"
-          driverName="You"
-          role="driver"
-          user={user}
-        />
+        {
+          // <Chat
+          //   isOpen={showChat}
+          //   conversation={conversation}
+          //   onClose={() => setShowChat(false)}
+          //   riderName="XXXXXXX"
+          //   driverName="You"
+          //   role="driver"
+          //   user={user}
+          // />
+        }
         
       </div>
     </ProtectedRoute>
