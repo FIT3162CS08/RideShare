@@ -188,7 +188,7 @@ export default function HomePage() {
               </div>
 
               {/* Features List */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8">
+              {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 w-full max-w-6xl mx-auto col-span-full">
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm shadow-lg">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl shadow-lg">
                     ✓
@@ -216,7 +216,7 @@ export default function HomePage() {
                     <div className="text-sm text-gray-600">Share rides</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Column - Image */}

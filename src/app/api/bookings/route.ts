@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
 
   const distanceKm = estimateDistanceKm(data.pickup, data.dropoff);
-  let fare = estimateFareKm(distanceKm, data.rideType);
+ let fare = typeof json.fare === "number" ? json.fare : estimateFareKm(distanceKm, data.rideType);
   const pplFactor = 1 + (data.passengers - 1) * 0.07;
   const luggageFactor = 1 + data.luggage * 0.03;
   const scheduleFactor = data.whenNow ? 1 : 1.08;

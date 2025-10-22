@@ -161,6 +161,7 @@ export default function RideShareBooking() {
           promo,
           payment,
           userId: user?._id,
+          fare
         }),
       });
       

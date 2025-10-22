@@ -306,7 +306,7 @@ export default function TripPage() {
         <div className="min-h-screen flex items-center justify-center text-gray-500">
           <div className="text-center">
             <p>No active trip found.</p>
-            <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p>
+            {/* <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p> */}
             <p className="text-xs mt-1 text-gray-400">
               {!user?.currentTrip ? 'No currentTrip set for this user' : 'Failed to load trip data'}
             </p>
