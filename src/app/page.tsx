@@ -56,9 +56,9 @@ function TripHistorySection() {
           </svg>
           Recent Trips
         </h2>
-        <Link href="/trip" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+        {/* <Link href="/trip" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
           View All →
-        </Link>
+        </Link> */}
       </div>
 
       {loading ? (
@@ -108,7 +108,7 @@ function TripHistorySection() {
 
 export default function HomePage() {
   const { user, loading, logout, setPickupContext, setDropoffContext } = useUser();
-
+  const [totalTrips, setTotalTrips] = useState<number>(0);
   const [pickup, setPickup] = useState("");
   const [pickupLoc, setPickupLoc] = useState<google.maps.places.PlaceResult | null>(null);
   const [dropoff, setDropoff] = useState("");
@@ -119,6 +119,23 @@ export default function HomePage() {
   const { isConnected, transport } = useSocket();
 
   const router = useRouter();
+
+    useEffect(() => {
+    const fetchTripCount = async () => {
+      if (!user?._id) return;
+      try {
+        const res = await fetch(`/api/users/${user._id}/trip-history`);
+        if (res.ok) {
+          const data = await res.json();
+          setTotalTrips(data.tripHistory?.length || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching trip count:", err);
+      }
+    };
+
+    fetchTripCount();
+  }, [user?._id]);
 
   if (loading) return Loading();
 
@@ -171,7 +188,7 @@ export default function HomePage() {
               </div>
 
               {/* Features List */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8">
+              {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 w-full max-w-6xl mx-auto col-span-full">
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm shadow-lg">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl shadow-lg">
                     ✓
@@ -199,7 +216,7 @@ export default function HomePage() {
                     <div className="text-sm text-gray-600">Share rides</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Column - Image */}
@@ -314,7 +331,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Stats cards - Enhanced */}
+          {/* Stats cards - Enhanced
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slideInLeft">
             <div className="relative overflow-hidden rounded-3xl p-6 card-hover group">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600"></div>
@@ -350,7 +367,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="text-white/80 text-sm font-medium mb-1">Total trips</p>
-                <p className="text-4xl font-bold text-white">0</p>
+                <p className="text-4xl font-bold text-white">{totalTrips}</p>
               </div>
             </div>
 
@@ -373,18 +390,17 @@ export default function HomePage() {
                 <p className="text-4xl font-bold text-white">Clayton</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Trip History Section */}
           <TripHistorySection />
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slideInRight">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-slideInRight">
             {[
               { icon: "🔍", label: "Find Rides", href: "/booking" },
               { icon: "🗺️", label: "My Trips", href: "/trip" },
               { icon: "👤", label: "Profile", href: "/settings" },
-              { icon: "💬", label: "Support", href: "/settings" },
             ].map((action, index) => (
               <Link key={index} href={action.href}>
                 <div className="glass-strong rounded-2xl p-6 hover:shadow-xl transform hover:scale-105 transition-all cursor-pointer text-center group">

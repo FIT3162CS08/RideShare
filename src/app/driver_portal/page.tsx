@@ -33,6 +33,7 @@ type DriveHistory = {
 
 export default function DriverPortal() {
   const { user } = useUser();
+  console.log("user: ", user)
   const [openBookings, setOpenBookings] = useState<Booking[]>([]);
   const [driveHistory, setDriveHistory] = useState<DriveHistory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,9 +43,47 @@ export default function DriverPortal() {
   const [conversation, setConversation] = useState({messages: [], convId: null});
   const [showChat, setShowChat] = useState(false);
 
+  console.log(
+    "openBookings: ", openBookings.length > 0 ? openBookings[0] : []
+  )
 
 
-  // userId must be fetched from page
+
+  // // userId must be fetched from page
+  // useEffect(() => {
+  //   const fetchMessages = async () => {
+  //       if (!user) return;
+  //       try {
+  //         console.log("IDS: ", user._id, '68df43eeb62c6d544a5dcac7')
+  //           const res = await fetch(`/api/message?userId=${'68df43eeb62c6d544a5dcac7'}&driverId=${user._id}`);
+  //           const conversations = await res.json();
+  //           setConversation(conversations);
+  //       } catch (err) {
+  //           console.log("❌ Error fetching messages:", err);
+  //       }
+  //   };
+  //   fetchMessages();
+
+  //   // Listen for new messages        !!! Remove returning conversationId
+  //   socket.on("newMessage", ({ msg, conversationId }) => {
+  //     console.log("MSG: ", msg)
+  //     setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+  //   });
+
+  //   if (user) {
+  //       socket.emit("join", user._id);
+  //   }
+
+  //   return () => {
+  //       socket.off("newMessage");
+  //   };
+  // }, [user, setConversation])
+
+  useEffect(() => {
+    fetchDriveHistory();
+  }, [user]);
+
+    // userId must be fetched from page
   useEffect(() => {
     const fetchMessages = async () => {
         if (!user) return;
@@ -73,10 +112,6 @@ export default function DriverPortal() {
         socket.off("newMessage");
     };
   }, [user, setConversation])
-
-  useEffect(() => {
-    fetchDriveHistory();
-  }, [user]);
 
   const fetchDriveHistory = async () => {
     if (!user?._id) return;
@@ -132,6 +167,8 @@ export default function DriverPortal() {
         }),
       });
 
+      await startConversation(bookingId);
+
       if (!res.ok) throw new Error("Failed to accept booking");
       
       // Remove the accepted booking from the list
@@ -148,21 +185,25 @@ export default function DriverPortal() {
     }
   };
 
-    async function startConversation() {
-        // Make a conversation
-        await fetch(`/api/messages/start`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                passenger: '68e341296877a8123bb1f261',
-                driver: '68e3422e6877a8123bb1f265',
-                pickup: '35 plowman court, Epping',
-                dropoff: 'Monash Clayton',
-                date: '2004-03-10',
-            }), // current driver
-        });
+  async function startConversation(bookingId) {
+      const currBooking = openBookings.filter(bk => bk._id === bookingId)[0]
+      console.log(currBooking.userId)
+
+      // Make a conversation
+      await fetch(`/api/messages/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              passenger: currBooking.userId,
+              driver: user._id,
+              pickup: currBooking.pickup,
+              dropoff: currBooking.dropoff,
+              date: currBooking.createdAt,
+          }), // current driver
+      });
     // ['68e3422e6877a8123bb1f265', '68e341296877a8123bb1f261']
   }
+
 
   if (loading) {
     return (
@@ -385,15 +426,18 @@ export default function DriverPortal() {
           </div>
         </main>
 
-        <Chat
-          isOpen={showChat}
-          conversation={conversation}
-          onClose={() => setShowChat(false)}
-          riderName="XXXXXXX"
-          driverName="You"
-          role="driver"
-          user={user}
-        />
+        {
+          // <Chat
+          //   isOpen={showChat}
+          //   conversation={conversation}
+          //   onClose={() => setShowChat(false)}
+          //   riderName="XXXXXXX"
+          //   driverName="You"
+          //   role="driver"
+          //   user={user}
+          // />
+        }
+        
       </div>
     </ProtectedRoute>
   );

@@ -126,12 +126,11 @@ export default function RideShareBooking() {
   };
 
   const fare = useMemo(() => {
-    const base = rideType === "premium" ? 7.5 : rideType === "xl" ? 5.5 : 4.0;
     const start = rideType === "premium" ? 7 : rideType === "xl" ? 4 : 3;
     const pplFactor = 1 + (passengers - 1) * 0.07;
     const luggageFactor = 1 + luggage * 0.03;
     const scheduleFactor = whenNow ? 1 : 1.08;
-    const subtotal = (start + distanceKm * base) * pplFactor * luggageFactor * scheduleFactor;
+    const subtotal = (start + distanceKm * 1.878) * pplFactor * luggageFactor * scheduleFactor;
     const promoCut = promo.trim().toUpperCase() === "WELCOME10" ? 0.9 : 1;
     const gst = 0.1;
     return Math.max(0, subtotal * promoCut * (1 + gst));
@@ -162,6 +161,7 @@ export default function RideShareBooking() {
           promo,
           payment,
           userId: user?._id,
+          fare
         }),
       });
       
@@ -190,7 +190,7 @@ export default function RideShareBooking() {
           setShowPayment(true);
         } else {
           // Cash payment - redirect directly to trip
-          window.location.href = `/trip/${newTripId}`;
+          window.location.href = `/trip`;
         }
         return;
       }
@@ -227,7 +227,7 @@ export default function RideShareBooking() {
   function handleViewTrip() {
     if (paymentDetails) {
       setShowPaymentComplete(false);
-      window.location.href = `/trip/${paymentDetails.tripId}`;
+      window.location.href = `/trip`;
     }
   }
 

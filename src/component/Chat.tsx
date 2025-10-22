@@ -41,9 +41,10 @@ function formatMessageTimestamp(isoString) {
 
 
 const Chat: React.FC<ChatProps> = ({ isOpen, conversation, onClose, riderName, driverName, role, user }) => {
-  const [messages, setMessages] = useState<Message[]>(conversation?.messages || []);
+  const [messages, setMessages] = useState<Message[]>(conversation ? conversation.messages : []);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  console.log(conversation)
 
   let receiverId = null
   if (messages && messages.length !== 0 && user) {
@@ -122,26 +123,26 @@ const Chat: React.FC<ChatProps> = ({ isOpen, conversation, onClose, riderName, d
 
         {/* Messages with beautiful styling */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white">
-          {messages && messages.map((message, index) => 
+          {(messages||[]).map((message, index) => 
             (
               <div
                 key={message._id}
-                className={`flex ${message.senderId === user?._id ? "justify-end" : "justify-start"} animate-fadeIn`}
+                className={`flex ${message.senderId === user._id ? "justify-end" : "justify-start"} animate-fadeIn`}
                 style={{animationDelay: `${index * 0.05}s`}}
               >
                 <div
                   className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg transform hover:scale-105 transition-all ${
-                    message.senderId === user?._id
+                    message.senderId === user._id
                       ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-sm"
                       : "bg-white text-gray-900 border border-gray-200 rounded-bl-sm"
                   }`}
                 >
                   <p className="text-sm leading-relaxed">{message.message}</p>
                   <p className={`text-xs mt-1 flex items-center gap-1 ${
-                    message.senderId === user?._id ? "text-white/70" : "text-gray-500"
+                    message.senderId === user._id ? "text-white/70" : "text-gray-500"
                   }`}>
                     {formatMessageTimestamp(message.createdAt)}
-                    {message.senderId === user?._id && (
+                    {message.senderId === user._id && (
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
                       </svg>
