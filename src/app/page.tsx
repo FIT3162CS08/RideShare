@@ -213,17 +213,6 @@ export default function HomePage() {
                   height={400}
                   className="rounded-3xl shadow-2xl w-full h-auto transform hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-6 shadow-2xl animate-float">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-2xl">
-                      ⭐
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-gray-800">4.9</div>
-                      <div className="text-sm text-gray-600">User Rating</div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
