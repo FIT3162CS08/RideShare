@@ -5,6 +5,7 @@ import Chat from "@/component/Chat";
 import ProtectedRoute from "@/component/ProtectedRoute";
 import ReviewModal from "@/component/ReviewModal";
 import { useUser } from "@/context/UserContext";
+import { socket } from "@/socket/socket";
 
 type Booking = {
   _id: string;
@@ -33,6 +34,7 @@ export default function TripPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const [driver, setDriver] = useState<any | null>(null);
+  const [conversation, setConversation] = useState({messages: [], convId: null});
 
   // Fetch the user's current trip
   useEffect(() => {
@@ -137,6 +139,38 @@ export default function TripPage() {
 
     fetchDriverInfo();
   }, [booking?.driverId]);
+
+    // Fetch messages and setup Socket
+  // DRIVER ID: 68df43eeb62c6d544a5dcac7. USER ID: 68f79222ae086705ddfd1477. 
+  // driverId must be fetched from page
+  console.log("IDS: ", user && user._id, driver)
+  useEffect(() => {
+    const fetchMessages = async () => {
+        if (!user && !trip && !driver) return;
+        try {
+            console.log("IDS: ", user._id, driver)
+            const res = await fetch(`/api/message?userId=${user._id}&driverId=${driver.id}`);
+            const conversations = await res.json();
+            setConversation(conversations);
+        } catch (err) {
+            console.log("❌ Error fetching messages:", err);
+        }
+    };
+    fetchMessages();
+
+    // Listen for new messages        !!! Remove returning conversationId
+    socket.on("newMessage", ({ msg, conversationId }) => {
+        setConversation((conv: any): any => ({messages: [...conv.messages, msg], conversationId}));
+    });
+
+    if (user) {
+        socket.emit("join", user._id);
+    }
+
+    return () => {
+        socket.off("newMessage");
+    };
+  }, [user, setConversation, driver])
 
   // Derived trip object (keeps existing fields/UI intact)
   const trip = booking
@@ -272,7 +306,7 @@ export default function TripPage() {
         <div className="min-h-screen flex items-center justify-center text-gray-500">
           <div className="text-center">
             <p>No active trip found.</p>
-            <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p>
+            {/* <p className="text-sm mt-2">User currentTrip: {user?.currentTrip ? String(user.currentTrip) : 'null'}</p> */}
             <p className="text-xs mt-1 text-gray-400">
               {!user?.currentTrip ? 'No currentTrip set for this user' : 'Failed to load trip data'}
             </p>
@@ -360,13 +394,13 @@ export default function TripPage() {
               </div>
 
               <h1 className="text-3xl font-bold mb-3 gradient-text-blue">
-                {tripStatus === "waiting" && "Driver is on the way"}
+                {tripStatus === "waiting" && "Finding a driver"}
                 {tripStatus === "picked_up" && "Trip in progress"}
                 {tripStatus === "completed" && "Trip completed"}
               </h1>
 
               <p className="text-lg text-gray-600 font-medium">
-                {tripStatus === "waiting" && `⏱️ ETA: ${trip.eta} minutes`}
+                {tripStatus === "waiting" && `⏱️ Hold on tight`}
                 {tripStatus === "picked_up" && "🚗 Enjoy your ride!"}
                 {tripStatus === "completed" && "✨ Thank you for using RideShare!"}
               </p>
@@ -448,7 +482,7 @@ export default function TripPage() {
                   onClick={markPickedUp}
                   className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Mark as Picked Up (Demo)
+                  ✓ Mark as Picked Up
                 </button>
               )}
               {tripStatus === "picked_up" && (
@@ -456,7 +490,7 @@ export default function TripPage() {
                   onClick={completeTrip}
                   className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg shadow-xl"
                 >
-                  ✓ Complete Trip (Demo)
+                  ✓ Complete Trip
                 </button>
               )}
               {tripStatus === "completed" && (
@@ -532,6 +566,16 @@ export default function TripPage() {
             dropoff: trip.dropoff,
             fare: trip.fare,
           }}
+        />
+
+        <Chat
+          isOpen={showChat}
+          conversation={conversation}
+          onClose={() => setShowChat(false)}
+          riderName="You"
+          driverName="XXXXXXX"
+          role="rider"
+          user={user}
         />
 
         <footer className="max-w-6xl mx-auto px-4 py-10 text-center">

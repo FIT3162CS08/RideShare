@@ -2,12 +2,9 @@ config:
   target: "http://localhost:3000" 
   phases: 
     # --- Warm-up (2 min total)
-    - duration: 30
-      arrivalRate: 100
-      name: "Warm-up phase 1"
-    - duration: 30
-      arrivalRate: 150
-      name: "Warm-up phase 2"
+    - duration: 600
+      arrivalRate: 200
+      name: "ENDURANCE"
   defaults: 
     headers: 
       Content-Type: "application/json" 

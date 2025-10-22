@@ -41,6 +41,16 @@ export default function Signup() {
         setError(emailError);
         return;
       }
+      const suffix = "@student.monash.edu"
+      const suffixLen = suffix.length
+      const prefixLen = email.length-suffixLen+1
+
+      for (let i = email.length-1; 0 < i && prefixLen < i && i < email.length; i--) {
+        if (email[i] != suffix[i-prefixLen+1]) {
+          setError("Must use Monash email")
+          return
+        }
+      }
     }
 
     // Phone validation
@@ -51,7 +61,6 @@ export default function Signup() {
         return;
       }
     }
-
     // Password validation
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
