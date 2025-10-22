@@ -105,12 +105,12 @@ export default function DriverTripPage() {
       // userId must be fetched from page
   useEffect(() => {
     const fetchMessages = async () => {
-        if (!user) return;
+        if (!user && !trip) return;
         try {
-          console.log("IDS: ", user._id, '68df43eeb62c6d544a5dcac7')
-            const res = await fetch(`/api/message?userId=${'68df43eeb62c6d544a5dcac7'}&driverId=${user._id}`);
-            const conversations = await res.json();
-            setConversation(conversations);
+          console.log("IDS: ", user._id, trip.riderId)
+          const res = await fetch(`/api/message?userId=${trip.riderId}&driverId=${user._id}`);
+          const conversations = await res.json();
+          setConversation(conversations);
         } catch (err) {
             console.log("❌ Error fetching messages:", err);
         }
@@ -130,7 +130,7 @@ export default function DriverTripPage() {
     return () => {
         socket.off("newMessage");
     };
-  }, [user, setConversation])
+  }, [user, setConversation, trip])
 
   // Auto-refresh trip data every 5 seconds
   useEffect(() => {
