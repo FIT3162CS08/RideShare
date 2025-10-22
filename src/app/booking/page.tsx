@@ -26,7 +26,8 @@ export default function RideShareBooking() {
   const [rideType, setRideType] = useState<"standard" | "xl" | "premium">("standard");
   const [passengers, setPassengers] = useState(1);
   const [luggage, setLuggage] = useState(0);
-  const [phone, setPhone] = useState("");
+
+  const [phone, setPhone] = useState(user?.phone || "");
   const [notes, setNotes] = useState("");
   const [promo, setPromo] = useState("");
   const [payment, setPayment] = useState<"card" | "cash">("card");
@@ -64,6 +65,7 @@ export default function RideShareBooking() {
         directionsRendererRef.current.setMap(map);
 
         updateMap();
+
       }
 
     }, 100);
@@ -105,6 +107,10 @@ export default function RideShareBooking() {
       }
     );
   }
+
+  useEffect(() => {
+    setPhone(user?.phone || phone)
+  }, [user])
 
   useEffect(() => {
     if (whenNow) {
